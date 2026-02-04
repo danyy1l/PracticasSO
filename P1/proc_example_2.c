@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -16,12 +17,13 @@ int main(void) {
       perror("fork");
       exit(EXIT_FAILURE);
     } else if (pid == 0) {
-      printf("Child %d\n", i);
-      exit(EXIT_SUCCESS);
+      printf("Child %jd. Parent (%jd)\n", (intmax_t)getpid(),
+             (intmax_t)getppid());
     } else if (pid > 0) {
       printf("Parent %d\n", i);
+      wait(NULL);
+      break;
     }
   }
-  wait(NULL);
   exit(EXIT_SUCCESS);
 }

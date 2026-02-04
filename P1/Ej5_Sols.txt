@@ -1,0 +1,5 @@
+a) No se puede saber en que orden se imprimira, dado que el proceso padre no espera a que termine la ejecución del hijo, queda en manos del scheduler elegir cuál se ejecuta primero.
+
+c) Corresponde al de la izquierda. Habria que dejar un wait en el padre y borrar el exit del proceso hijo, para que se replique.
+
+d) Sí, porque los padres no esperan a la ejecucion del hijo, muy probablemente termine algún padre antes que su hijo

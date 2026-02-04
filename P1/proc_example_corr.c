@@ -19,9 +19,10 @@ int main(void) {
       printf("Child %d\n", i);
       exit(EXIT_SUCCESS);
     } else if (pid > 0) {
-      printf("Parent %d\n", i);
+      int status = wait(NULL);
+      int x = WIFEXITED(status);
+      printf("Parent %d. Child: %d\n", i, x);
     }
   }
-  wait(NULL);
   exit(EXIT_SUCCESS);
 }
