@@ -2,6 +2,9 @@ EXE=miner
 LOGGER=logger
 CC=cc
 CFLAGS=-c -Wall -Wextra -std=c99 -pedantic -g
+CLIBS=-lpthread
+
+.PHONY: $(EXE) clean
 
 all: $(EXE) $(LOGGER)
 
