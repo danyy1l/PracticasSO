@@ -1,23 +1,24 @@
 EXE=miner
 LOGGER=logger
 CC=cc
-CFLAGS=-c -Wall -Wextra -std=c99 -pedantic -g
+CFLAGS=-Wall -Wextra -std=c99 -pedantic -g
 CLIBS=-lpthread
 
-.PHONY: $(EXE) clean
+.PHONY: clean run
 
 all: $(EXE) $(LOGGER)
 
-OBJ = $(EXE).o $(LOGGER).o pow.o
-
 $(EXE): $(EXE).o pow.o
-	$(CC) -o $@ $^
+	$(CC) -o $@ $^ $(CLIBS)
 
 $(LOGGER): $(LOGGER).o
 	$(CC) -o $@ $^
 
 %.o : %.c
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -f *.o $(EXE) $(LOGGER)
+
+run: all
+	./$(EXE) 1 2 3
