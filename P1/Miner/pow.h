@@ -12,6 +12,8 @@
 #ifndef _POW_H
 #define _POW_H
 
+#include "types.h"
+
 #define POW_LIMIT 9997697 /*!< Maximum number for the hash result. */
 
 /**
@@ -21,6 +23,6 @@
  * @param x Argument of the hash function, x.
  * @return Result of the hash function, f(x).
  */
-long int pow_hash(long int x);
+u64 pow_hash(long int x);
 
 #endif

@@ -1,46 +1,46 @@
+#include "logger.h"
+#include "minero.h"
 #include "types.h"
-#include <stdio.h>
-#include <stdlib.h>
+#include <assert.h>
+#include <errno.h>
+#include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
-
-void miner() { printf("I am Miner!\n"); }
 
 int main(int argc, char *argv[]) {
   /* CONTROL DE ARGUMENTOS */
   if (argc != 4) {
-    perror("Usage: ./miner <TARGET_INI> <ROUNDS> <N_THREADS>");
-    printf("Miner exited unexpectedly!\n");
-    exit(EXIT_FAILURE);
+    fprintf(stderr, "Miner exited unexpectedly!\n");
+    die("Usage: ./miner <TARGET_INI> <ROUNDS> <N_THREADS>");
   }
 
   /* INICIALIZACION DE VARIABLES */
-  u32 rounds = atoi(argv[2]);
-  u32 n_threads = atoi(argv[3]);
-  u32 status = 0;
-  pid_t rc = 0;
-  char *args[2] = {"./logger", "NULL"};
+  i32 miner_pipe[2] = {0};
+  i32 logger_pipe[2] = {0};
+  i64 target = atoi(argv[1]);
+  u64 rounds = atoi(argv[2]);
+  u64 n_threads = atoi(argv[3]);
+
+  /* APERTURA DE PIPES */
+  open_pipes(miner_pipe, logger_pipe);
 
   /* FORK */
-  rc = fork();
-  if (rc < 0) {
-    perror("Error! Couldn't initialize new process\n");
+  pid_t childpid = fork();
+  if (childpid < 0) {
+    int x = errno;
     printf("Miner exited unexpectedly!\n");
-    exit(EXIT_FAILURE);
-  } else if (rc == 0) {
-    execv("./logger", args);
+    die(strerror(x));
+  } else if (childpid == 0) {
+    logger();
     exit(EXIT_SUCCESS);
   } else {
-    status = wait(NULL);
-    if (status) {
-      printf("Logger exited with status 0\n");
-    } else {
-      printf("Logger exited unexpectedly!\n");
-    }
-    miner();
+    minero(target, rounds, n_threads);
+    waitpid(childpid, NULL, 0);
   }
 
   printf("Miner exited with status 0\n");
 
+  /* CERRAMOS PIPES */
+  close_pipes(miner_pipe, logger_pipe);
   return EXIT_SUCCESS;
 }

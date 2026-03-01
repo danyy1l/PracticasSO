@@ -1,11 +1,5 @@
-#include "types.h"
+#include "logger.h"
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 
+/* Funcion trivial para prueba de fork */
 void logger() { printf("I am Logger!\n"); }
-
-int main(int argc, char *argv[]) {
-  logger();
-  return EXIT_SUCCESS;
-}
