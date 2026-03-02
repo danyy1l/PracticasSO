@@ -19,7 +19,8 @@ int main(void) {
   fprintf(stderr, "PID = %d\nStop 1\n", getpid());
   getchar();
 
-  if ((file1 = open(FILE1, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) == -1) {
+  if ((file1 = open(FILE1, O_CREAT | O_TRUNC | O_RDWR,
+                    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) == -1) {
     perror("open");
     exit(EXIT_FAILURE);
   }
@@ -28,7 +29,8 @@ int main(void) {
   total_size_written = 0;
   target_size = sizeof(MESSAGE);
   do {
-    size_written = write(file1, MESSAGE + total_size_written, target_size - total_size_written);
+    size_written = write(file1, MESSAGE + total_size_written,
+                         target_size - total_size_written);
     if (size_written == -1) {
       perror("write");
       exit(EXIT_FAILURE);
@@ -39,7 +41,8 @@ int main(void) {
   fprintf(stderr, "Stop 2\n");
   getchar();
 
-  if ((file2 = open(FILE2, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) == -1) {
+  if ((file2 = open(FILE2, O_CREAT | O_TRUNC | O_RDWR,
+                    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) == -1) {
     perror("open");
     exit(EXIT_FAILURE);
   }
@@ -60,7 +63,8 @@ int main(void) {
   fprintf(stderr, "Stop 5\n");
   getchar();
 
-  if ((file3 = open(FILE3, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) == -1) {
+  if ((file3 = open(FILE3, O_CREAT | O_TRUNC | O_RDWR,
+                    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) == -1) {
     perror("open");
     exit(EXIT_FAILURE);
   }
@@ -68,7 +72,8 @@ int main(void) {
   fprintf(stderr, "Stop 6\n");
   getchar();
 
-  if ((file4 = open(FILE3, O_RDONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) == -1) {
+  if ((file4 = open(FILE3, O_RDONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) ==
+      -1) {
     perror("open");
     exit(EXIT_FAILURE);
   }

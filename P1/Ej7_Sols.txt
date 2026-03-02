@@ -1,0 +1,4 @@
+a) No ocurriria nada puesto que lo que se ejecuta es: ls mi-ls ./, al pasar argumentos sin flag con "-" los ignora.
+
+b) hay que pasar cada argumento como un parametro separado: ls , "ls", "./", "NULL";
+   Además, hay que indicar la ruta de ls puesto que no la busca en PATH: /usr/bin/ls

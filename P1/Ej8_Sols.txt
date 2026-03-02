@@ -1,0 +1,5 @@
+a) Si el proceso no esperara a los hilos, se imprimirian los primeros caracteres de cada palabra (H, W) y el proceso terminaria.
+
+b) Se imprime: "H, El programa ha terminado\n" y despues continuan los hilos creados. Es decir, pthread_exit solamente termina el hilo principal.
+
+c) pthread_detach(ambos hilos);

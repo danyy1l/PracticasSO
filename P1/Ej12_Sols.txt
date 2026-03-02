@@ -1,0 +1,4 @@
+a) I have written in the pipe
+   I have received the string: Hi all!
+
+b) El proceso queda en stall porque el padre sigue esperando leer algo al haber un extremo de escritura abierto. que es el mismo.

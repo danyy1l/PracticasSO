@@ -7,14 +7,16 @@
 int main(void) {
   pid_t pid;
 
-  printf("I am your father");
+  printf("I am your father\n");
+  fflush(stdout);
 
   pid = fork();
   if (pid < 0) {
     perror("fork");
     exit(EXIT_FAILURE);
   } else if (pid == 0) {
-    printf("Noooooo");
+    printf("Noooooo\n");
+    fflush(stdout);
     exit(EXIT_SUCCESS);
   }
 
