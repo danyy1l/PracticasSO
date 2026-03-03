@@ -23,6 +23,6 @@
  * @param x Argument of the hash function, x.
  * @return Result of the hash function, f(x).
  */
-u64 pow_hash(u64 x);
+u64 pow_hash(long int x);
 
 #endif

@@ -57,12 +57,10 @@ void *pow_seek(void *arg) {
   assert(arg != NULL);
 
   Arg_hilos *args = (Arg_hilos *)arg;
-
   if (*(args->found_value) == FOUND)
     return NULL;
 
   u64 i = 0;
-
   u64 *pow_result = (u64 *)malloc(sizeof(u64));
   if (pow_result == NULL)
     die(strerror(errno));
@@ -85,7 +83,6 @@ void *pow_seek(void *arg) {
 
 u64 calcular_solucion(Miner_data *args) {
   /* VERIFICACION PARAMETROS DE ENTRADA */
-  assert(args != NULL);
   assert(args->n_threads > 0);
   assert(args->rounds > 0);
 

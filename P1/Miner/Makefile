@@ -1,14 +1,14 @@
-EXE=miner
+EXE=mrush
 CC=cc
 CFLAGS=-Wall -Wextra -std=gnu99 -pedantic -g
 CLIBS=-lpthread
 
 OBJ_DIR = obj
 
-.PHONY: clean run
+.PHONY: clean run doc test_threads test_rounds test_all
 
-HEADERS=minero.h pow.h logger.h types.h
-OBJ= $(addprefix $(OBJ_DIR)/, pow.o logger.o minero.o $(EXE).o)
+HEADERS=miner.h pow.h logger.h types.h
+OBJ= $(addprefix $(OBJ_DIR)/, pow.o logger.o miner.o $(EXE).o)
 
 all: $(EXE)
 
@@ -22,7 +22,14 @@ $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
 
 clean:
-	rm -rf $(OBJ_DIR) $(EXE)
-
+	-rm -rf *.log
+	rm -rf DocumentacionMinero.pdf doc $(OBJ_DIR) $(EXE) test_logs
 run: all
-	./$(EXE) 1 2 3
+	./$(EXE) 1 100 5
+
+doc:
+	doxygen Doxyfile
+	$(MAKE) -C doc/latex
+	cp doc/latex/refman.pdf ./DocumentacionMinero.pdf
+
+-include tests.mk
