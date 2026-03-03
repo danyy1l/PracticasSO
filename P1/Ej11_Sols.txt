@@ -1,7 +1,0 @@
-a) Se escribe 2 veces, antes y despues del hijo. Se escribe 2 porque printf es una funcion que emplea el objeto FILE asociado a stdout. Como no tiene terminador de linea, I am your father se escribe en el buffer del proceso. Cuando el hijo escribe Noooo tambien va al buffer, y engancha con I am your father.
-
-b) No ocurre por lo ya dicho
-c) En el archivo inicial ocurre lo mismo que en a) por lo del buffer.
-Con el \n ocurre de nuevo que se repite. Nuevamente por el buffer.
-
-d) fflush

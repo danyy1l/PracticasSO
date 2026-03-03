@@ -1,3 +1,0 @@
-a) Parent no imprime la frase sentence, puesto que los segmentos de memoria son unicos por proceso, no comparten. No es ocrrecto puesto que el hijo queda zombi y ninguno de los procesos libera la memoria reservada.
-
-b) En ambos porque el hijo se crea como una copia del padre por lo que vuelve a reservar la memoria.

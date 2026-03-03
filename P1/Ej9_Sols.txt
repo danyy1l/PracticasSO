@@ -1,5 +1,0 @@
-a) Nombre del ejecutable: ls -l /proc/PID/exe ó cat /proc/PID/comm
-b) Variable de entorno LANG: cat environ | tr '\0' '\n' | grep LANG
-c) Directoria actual: cwd
-d) Linea de comandos: cmdline
-e) Lista de hilos: task
