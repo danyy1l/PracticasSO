@@ -36,7 +36,7 @@ run: all
 
 # Ejecutar con valgrind
 valgrind: all
-	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --log-file=memcheck.log ./$(EXE) 1 10 8
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --trace-children=yes --log-file=memcheck.log ./$(EXE) 1 10 8
 
 # Ejecutar con prueba de sincronizacion de hilos
 helgrind: all
