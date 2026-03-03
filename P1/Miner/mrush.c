@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
   /* CONTROL DE ARGUMENTOS */
   if (argc != 4) {
     fprintf(stderr, "Miner exited unexpectedly!\n");
-    die("Usage: ./miner <TARGET_INI> <ROUNDS> <N_THREADS>");
+    die_msg("Usage: ./miner <TARGET_INI> <ROUNDS> <N_THREADS>");
   }
 
   /* CONTROL DE LIMITES DE ARGUMENTOS */
