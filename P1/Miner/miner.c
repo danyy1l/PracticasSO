@@ -16,7 +16,6 @@
 #include "pow.h"
 #include "types.h"
 #include <assert.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -85,8 +84,6 @@ void *pow_seek(void *arg) {
 u64 calcular_solucion(Miner_data *args) {
   /* VERIFICACION PARAMETROS DE ENTRADA */
   assert(args != NULL);
-  assert(args->n_threads > 0);
-  assert(args->rounds > 0);
 
   /* INICIALIZO ARGUMENTOS DE POW_SEEK Y ARRAY DE HILOS  */
   pthread_t *hilos = (pthread_t *)malloc(args->n_threads * sizeof(pthread_t));
