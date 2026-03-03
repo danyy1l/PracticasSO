@@ -40,13 +40,13 @@ i32 logger(i32 *miner_pipe, i32 *logger_pipe) {
 
     dprintf(fd_logger, "%-12s%lu\n", "Id:", arg.id);
     dprintf(fd_logger, "%-12s%lu\n", "Winner:", (u64)arg.winner);
-    dprintf(fd_logger, "%-12s%lu\n", "Target:", arg.target);
+    dprintf(fd_logger, "%-12s%08lu\n", "Target:", arg.target);
 
     if (arg.validated) {
-      dprintf(fd_logger, "%-12s%lu %s", "Solution:", arg.solution,
+      dprintf(fd_logger, "%-12s%08lu %s", "Solution:", arg.solution,
               "(validated)\n");
     } else {
-      dprintf(fd_logger, "%-12s%lu %s", "Solution:", arg.solution,
+      dprintf(fd_logger, "%-12s%08lu %s", "Solution:", arg.solution,
               "(rejected)\n");
     }
 

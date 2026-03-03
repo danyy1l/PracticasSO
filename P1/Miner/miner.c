@@ -72,7 +72,11 @@ void *pow_seek(void *arg) {
     if (pow_hash(i) == args->target) {
       *(args->found_value) = FOUND;
       *pow_result = i;
-      printf("Solution accepted: %08lu --> %08lu\n", args->target, i);
+      if (args->target != 0)
+        printf("Solution accepted: %08lu --> %08lu\n", args->target, i);
+      else {
+        printf("Solution rejected: %08lu --> %08lu\n", args->target, i);
+      }
       return pow_result;
     }
   }
@@ -157,7 +161,7 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe) {
     logger_args.target = args->target;
     logger_args.id = ronda_actual;
     logger_args.solution = sol;
-    logger_args.validated = 1;
+    logger_args.validated = (args->target == 0) ? 0 : 1;
     logger_args.votes = ronda_actual;
     logger_args.wallets = logger_args.winner;
 
