@@ -72,11 +72,7 @@ void *pow_seek(void *arg) {
     if (pow_hash(i) == args->target) {
       *(args->found_value) = FOUND;
       *pow_result = i;
-      if (args->target != 0)
-        printf("Solution accepted: %08lu --> %08lu\n", args->target, i);
-      else {
-        printf("Solution rejected: %08lu --> %08lu\n", args->target, i);
-      }
+      printf("Solution accepted: %08lu --> %08lu\n", args->target, i);
       return pow_result;
     }
   }
