@@ -18,7 +18,6 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -46,24 +45,26 @@ void open_pipes(i32 *miner_pipe, i32 *logger_pipe) {
 
   /* APERTURA TUBERIA MINER ---> LOGGER */
   if (pipe(miner_pipe) == ERR)
-    die(strerror(errno));
+    die("Error al abrir tuberia del minero");
 
   /* APERTURA TUBERIA LOGGER ---> MINER */
   if (pipe(logger_pipe) == ERR)
-    die(strerror(errno));
+    die("Error al abrir la tuberia del registrador");
 }
 
 void *pow_seek(void *arg) {
   assert(arg != NULL);
 
   Arg_hilos *args = (Arg_hilos *)arg;
+
   if (*(args->found_value) == FOUND)
     return NULL;
 
   u64 i = 0;
+
   u64 *pow_result = (u64 *)malloc(sizeof(u64));
   if (pow_result == NULL)
-    die(strerror(errno));
+    die("Error al reservar memoria para solucion de POW");
 
   for (i = args->min; i <= args->max; i++) {
     if (*(args->found_value) == FOUND)
@@ -83,18 +84,19 @@ void *pow_seek(void *arg) {
 
 u64 calcular_solucion(Miner_data *args) {
   /* VERIFICACION PARAMETROS DE ENTRADA */
+  assert(args != NULL);
   assert(args->n_threads > 0);
   assert(args->rounds > 0);
 
   /* INICIALIZO ARGUMENTOS DE POW_SEEK Y ARRAY DE HILOS  */
   pthread_t *hilos = (pthread_t *)malloc(args->n_threads * sizeof(pthread_t));
   if (hilos == NULL)
-    die(strerror(errno));
+    die("Error al reservar memoria para hilos");
 
   Arg_hilos *thread_args =
       (Arg_hilos *)malloc(args->n_threads * sizeof(Arg_hilos));
   if (thread_args == NULL)
-    die(strerror(errno));
+    die("Error al reservar memoria para argumentos de hilos");
 
   volatile int found_flag = 0;
   u64 rango_busqueda = POW_LIMIT / args->n_threads;
@@ -112,9 +114,8 @@ u64 calcular_solucion(Miner_data *args) {
     /* Arg debe ser void* por eso hay que castear el puntero al hilo */
     if (pthread_create(&hilos[i], NULL, pow_seek, (void *)&thread_args[i]) !=
         OK) {
-      int foo = errno;
       free(hilos);
-      die(strerror(foo));
+      die("Error al crear los hilos");
     }
   }
 

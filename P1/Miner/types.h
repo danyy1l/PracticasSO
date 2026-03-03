@@ -39,6 +39,15 @@ typedef double f64;   /**< Float 64 bit. 15 dig. precision */
     perror(msg);                                                               \
     exit(EXIT_FAILURE);                                                        \
   } while (0)
+
+/**
+ * @brief Termina el programa imprimiendo un mensaje lógico personalizado
+ */
+#define die_msg(msg)                                                           \
+  do {                                                                         \
+    fprintf(stderr, "%s\n", msg);                                              \
+    exit(EXIT_FAILURE);                                                        \
+  } while (0)
 /**@}*/
 
 /** @name Extremos de tuberías (Pipes) */

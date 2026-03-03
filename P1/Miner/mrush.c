@@ -11,10 +11,8 @@
 #include "miner.h"
 #include "types.h"
 #include <assert.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -25,8 +23,9 @@ int main(int argc, char *argv[]) {
     die("Usage: ./miner <TARGET_INI> <ROUNDS> <N_THREADS>");
   }
 
+  /* CONTROL DE LIMITES DE ARGUMENTOS */
   if (atoi(argv[1]) < 0 || atoi(argv[2]) < 0 || atoi(argv[3]) < 0) {
-    die("Target, rounds and number of threads MUST be positive\n");
+    die_msg("Target, rounds and number of threads MUST be positive\n");
   }
 
   /* INICIALIZACION DE VARIABLES */
@@ -45,9 +44,7 @@ int main(int argc, char *argv[]) {
   /* FORK */
   pid_t childpid = fork();
   if (childpid < 0) {
-    int x = errno;
-    printf("Miner exited unexpectedly!\n");
-    die(strerror(x));
+    die("Miner exited unexpectedly!");
   } else if (childpid == 0) {
     /* Control de extremos de las tuberias */
     close(logger_pipe[READ]);
