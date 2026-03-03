@@ -25,7 +25,13 @@ clean:
 	-rm -rf *.log
 	rm -rf DocumentacionMinero.pdf doc $(OBJ_DIR) $(EXE) test_logs
 run: all
-	./$(EXE) 1 100 5
+	./$(EXE) 1 100 8
+
+valgrind: all
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --log-file=memcheck.log ./$(EXE) 1 10 8
+
+helgrind: all
+	valgrind --tool=helgrind --log-file=thread_check.log ./mrush 1 5 4
 
 doc:
 	doxygen Doxyfile

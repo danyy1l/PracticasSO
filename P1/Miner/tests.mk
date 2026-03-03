@@ -11,7 +11,7 @@ THREADS_FIJOS = 4
 .PHONY: test_threads test_rounds test_all
 
 # Prueba variando hilos
-test_threads: $(EXE)
+test_threads20: $(EXE)
 	@mkdir -p test_logs
 	@echo ""
 	@echo "======================================================="
@@ -39,6 +39,99 @@ test_threads: $(EXE)
 	@echo "---> Ejecutando con 64 HILOS"
 	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 64
 
+# Prueba variando hilos
+test_threads40: $(EXE)
+	@mkdir -p test_logs
+	@echo ""
+	@echo "======================================================="
+	@echo " PRUEBA 1: Variando número de hilos (Rondas fijas: 40)"
+	@echo "======================================================="
+	@echo ""
+	@echo "---> Ejecutando con 1 HILO"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) 40 1
+	@echo ""
+	@echo "---> Ejecutando con 2 HILOS"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) 40 2
+	@echo ""
+	@echo "---> Ejecutando con 4 HILOS"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) 40 4
+	@echo ""
+	@echo "---> Ejecutando con 8 HILOS"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) 40 8
+	@echo ""
+	@echo "---> Ejecutando con 16 HILOS"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) 40 16
+	@echo ""
+	@echo "---> Ejecutando con 32 HILOS"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) 40 32
+	@echo ""
+	@echo "---> Ejecutando con 64 HILOS"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) 40 64
+
+# Prueba variando hilos
+test_threads100: $(EXE)
+	@mkdir -p test_logs
+	@echo ""
+	@echo "======================================================="
+	@echo " PRUEBA 1: Variando número de hilos (Rondas fijas: 100)"
+	@echo "======================================================="
+	@echo ""
+	@echo "---> Ejecutando con 1 HILO"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) 100 1
+	@echo ""
+	@echo "---> Ejecutando con 2 HILOS"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) 100 2
+	@echo ""
+	@echo "---> Ejecutando con 4 HILOS"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) 100 4
+	@echo ""
+	@echo "---> Ejecutando con 8 HILOS"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) 100 8
+	@echo ""
+	@echo "---> Ejecutando con 16 HILOS"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) 100 16
+	@echo ""
+	@echo "---> Ejecutando con 32 HILOS"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) 100 32
+	@echo ""
+	@echo "---> Ejecutando con 64 HILOS"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) 100 64
+
+test_threads_best: $(EXE)
+	@mkdir -p test_logs
+	@echo ""
+	@echo "======================================================="
+	@echo " PRUEBA 1: Variando número de hilos (Rondas fijas: $(ROUNDS_FIJAS))"
+	@echo "======================================================="
+	@echo ""
+	@echo "---> Ejecutando con 1 HILO"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 8
+	@echo ""
+	@echo "---> Ejecutando con 2 HILOS"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 9
+	@echo ""
+	@echo "---> Ejecutando con 4 HILOS"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 10
+	@echo ""
+	@echo "---> Ejecutando con 1 HILO"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 11
+	@echo ""
+	@echo "---> Ejecutando con 8 HILOS"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 12
+	@echo ""
+	@echo "---> Ejecutando con 16 HILOS"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 13
+	@echo ""
+	@echo "---> Ejecutando con 32 HILOS"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 14
+	@echo ""
+	@echo "---> Ejecutando con 64 HILOS"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 15
+	@echo "---> Ejecutando con 1 HILO"
+	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 16
+	@echo ""
+
+
 # Prueba variando rondas
 test_rounds: $(EXE)
 	@mkdir -p test_logs
@@ -58,6 +151,6 @@ test_rounds: $(EXE)
 	@echo ""
 
 
-test_all: test_threads test_rounds
+test_all: test_threads20 test_rounds
 	@echo ""
 	@echo "=== TODAS LAS PRUEBAS DE RENDIMIENTO COMPLETADAS ==="
