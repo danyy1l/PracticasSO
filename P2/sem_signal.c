@@ -7,6 +7,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <errno.h>
+
 #define SEM_NAME "/example_sem"
 
 void handler(int sig) { return; }
@@ -32,7 +34,21 @@ int main(void) {
   }
 
   printf("Starting wait (PID=%d)\n", getpid());
-  sem_wait(sem);
+  /* Bucle para reintentar si la llamada es interrumpida por una señal */
+  while (sem_wait(sem) == -1) {
+    if (errno == EINTR) {
+      /* Fue interrumpido por una señal capturada (ej. SIGINT).
+         El bucle iterará y volverá a llamar a sem_wait. */
+      continue;
+    } else {
+      /* Ocurrió un error distinto y crítico (ej. semáforo inválido) */
+      perror("sem_wait falló");
+      exit(EXIT_FAILURE);
+    }
+  }
+
   printf("Finishing wait\n");
+  printf("Finishing wait\n");
+  sem_close(sem);
   sem_unlink(SEM_NAME);
 }
