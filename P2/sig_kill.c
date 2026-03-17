@@ -15,6 +15,7 @@ int main(int argc, char *argv[]) {
   pid = (pid_t)atoi(argv[2]);
 
   /* Complete the code. */
+  kill(pid, sig);
 
   exit(EXIT_SUCCESS);
 }

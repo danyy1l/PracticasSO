@@ -17,7 +17,7 @@ int main(void) {
   sigemptyset(&(act.sa_mask));
   act.sa_flags = 0;
 
-  if (sigaction(SIGINT, &act, NULL) < 0) {
+  if (sigaction(5, &act, NULL) < 0) {
     perror("sigaction");
     exit(EXIT_FAILURE);
   }

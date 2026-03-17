@@ -1,6 +1,6 @@
 EXE=mrush
 CC=cc
-CFLAGS=-Wall -Wextra -std=gnu99 -pedantic -g
+CFLAGS=-Wall -Wextra -O3 -std=gnu99 -pedantic -g
 CLIBS=-lpthread
 
 OBJ_DIR = obj

@@ -1,0 +1,2 @@
+a) Termina de contar, imprime el mensaje del handler y temrina el programa
+b) Corta el programa de golpe, terminandolo inmediatamente sin ejecutar el handler
