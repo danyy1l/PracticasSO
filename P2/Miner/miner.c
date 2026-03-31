@@ -47,8 +47,26 @@ void open_pipes(i32 *miner_pipe, i32 *logger_pipe) {
     die("Error al abrir tuberia del minero");
 
   /* APERTURA TUBERIA LOGGER ---> MINER */
-  if (pipe(logger_pipe) == ERR)
+  if (pipe(logger_pipe) == ERR) {
+    close(miner_pipe[READ]);
+    close(miner_pipe[WRITE]);
     die("Error al abrir la tuberia del registrador");
+  }
+}
+
+void close_pipes(i32 *miner_pipe, i32 *logger_pipe) {
+  close(logger_pipe[READ]);
+  close(logger_pipe[WRITE]);
+
+  /* Ponemos a -1 por si se vuelve a llamar la funcion */
+  logger_pipe[READ] = -1;
+  logger_pipe[WRITE] = -1;
+
+  close(miner_pipe[READ]);
+  close(miner_pipe[WRITE]);
+
+  miner_pipe[READ] = -1;
+  miner_pipe[WRITE] = -1;
 }
 
 void *pow_seek(void *arg) {
@@ -92,8 +110,10 @@ u64 calcular_solucion(Miner_data *args) {
 
   Arg_hilos *thread_args =
       (Arg_hilos *)malloc(args->n_threads * sizeof(Arg_hilos));
-  if (thread_args == NULL)
+  if (thread_args == NULL) {
+    free(hilos);
     die("Error al reservar memoria para argumentos de hilos");
+  }
 
   volatile int found_flag = 0;
   u64 rango_busqueda = POW_LIMIT / args->n_threads;
@@ -111,7 +131,21 @@ u64 calcular_solucion(Miner_data *args) {
     /* Arg debe ser void* por eso hay que castear el puntero al hilo */
     if (pthread_create(&hilos[i], NULL, pow_seek, (void *)&thread_args[i]) !=
         OK) {
+      /* Con esto marcamos a los hilos que ya terminen */
+      found_flag = 1;
+
+      for (u64 j = 0; j < i; j++) {
+        void *valor_retorno;
+        pthread_join(hilos[j], &valor_retorno);
+
+        /* pow_seek reserva memoria, hay que recoger la solucion y liberarla */
+        if (valor_retorno != NULL)
+          free(valor_retorno);
+      }
+
       free(hilos);
+      free(thread_args);
+
       die("Error al crear los hilos");
     }
   }

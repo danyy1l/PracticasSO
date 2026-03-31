@@ -29,8 +29,8 @@ int main(int argc, char *argv[]) {
   }
 
   /* INICIALIZACION DE VARIABLES */
-  i32 miner_pipe[2] = {0};
-  i32 logger_pipe[2] = {0};
+  i32 miner_pipe[2] = {-1, -1};
+  i32 logger_pipe[2] = {-1, -1};
   Miner_data data_miner = {0};
   i32 status = EXIT_FAILURE;
 
@@ -44,6 +44,7 @@ int main(int argc, char *argv[]) {
   /* FORK */
   pid_t childpid = fork();
   if (childpid < 0) {
+    close_pipes(miner_pipe, logger_pipe);
     die("Miner exited unexpectedly!");
   } else if (childpid == 0) {
     /* Control de extremos de las tuberias */
@@ -69,7 +70,7 @@ int main(int argc, char *argv[]) {
     waitpid(childpid, NULL, 0);
   }
 
-  printf("Miner exited with status 0\n");
+  printf("Miner exited with status %d\n", EXIT_SUCCESS);
 
   return EXIT_SUCCESS;
 }

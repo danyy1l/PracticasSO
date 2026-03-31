@@ -86,4 +86,12 @@ u64 calcular_solucion(Miner_data *args);
  */
 void open_pipes(i32 *miner_pipe, i32 *logger_pipe);
 
+/**
+ * @brief Cierre de tuberias
+ *
+ * @param miner_pipe Tuberia minero--->registrador
+ * @param logger_pipe Tuberia registrador---->minero
+ */
+void close_pipes(i32 *miner_pipe, i32 *logger_pipe);
+
 #endif
