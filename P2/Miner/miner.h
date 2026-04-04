@@ -12,8 +12,10 @@
 #ifndef _MINER_H
 #define _MINER_H
 
+#include "files.h"
 #include "types.h"
 #include <pthread.h>
+#include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -36,14 +38,9 @@ typedef struct {
  */
 
 typedef struct {
-  u64 target;    /**< Objetivo de busqueda de funcion hash */
-  u64 rounds;    /**< Numero maximo de rondas de busqueda */
+  u64 time;      /**< Tiempo en segundos de ejecucion del minero */
   u64 n_threads; /**< Numero de hilos en los que separar carga de trabajo */
 } Miner_data;
-
-/* Al ser estatica hay que definirla en .h porque todos los archivos que la usen
- * necesitan una copia del codigo, si estuviera en .c (opaca) habria error
- * puesto que no podrian emplear la cualidad de inline */
 
 /******************************* DATOS PRIVADOS ****************************/
 
@@ -56,8 +53,10 @@ typedef struct {
  * numero de hilos)
  * @param miner_pipe Tuberia minero--->registrador
  * @param logger_pipe Tuberia registrador---->minero
+ * @param sems Estructura de semaforos del sistema
  */
-void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe);
+void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
+            Miner_Mutexes *sems);
 
 /**
  * @brief Busca el valor objetivo en un rango dado
@@ -71,27 +70,11 @@ void *pow_seek(void *arg);
 /**
  * @brief Crea los hilos y separa la tarea
  *
- * @param miner_data Estructura con informacion para minero (rondas, target y
- * numero de hilos)
+ * @param target Objetivo de busqueda de la ronda
+ * @param miner_data Estructura con informacion para minero (tiempo y numero de
+ * hilos)
  * @return Devuelve la solucion para el POW con objetivo args->target
  */
-u64 calcular_solucion(Miner_data *args);
-
-/**
- * @brief Apertura de tuberias
- *
- * @param miner_pipe Tuberia minero--->registrador
- * @param logger_pipe Tuberia registrador---->minero
- * En caso de error termina el programa con die()
- */
-void open_pipes(i32 *miner_pipe, i32 *logger_pipe);
-
-/**
- * @brief Cierre de tuberias
- *
- * @param miner_pipe Tuberia minero--->registrador
- * @param logger_pipe Tuberia registrador---->minero
- */
-void close_pipes(i32 *miner_pipe, i32 *logger_pipe);
+u64 calcular_solucion(u64 target, Miner_data *args);
 
 #endif

@@ -16,7 +16,6 @@
 #include "pow.h"
 #include "types.h"
 #include <assert.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -120,7 +119,7 @@ u64 calcular_solucion(Miner_data *args) {
   }
 
   u64 sol = 0;
-  _Bool found = 0;
+  bool found = 0;
 
   for (u64 i = 0; i < args->n_threads; i++) {
     /*thread_return coge un void ** */
@@ -130,7 +129,7 @@ u64 calcular_solucion(Miner_data *args) {
     if (valor_retorno != NULL) {
       u64 *out = (u64 *)valor_retorno;
       sol = *out;
-      found = 1;
+      found = true;
 
       free(out);
     }

@@ -10,6 +10,7 @@
  */
 
 #include "logger.h"
+#include "files.h"
 #include "types.h"
 #include <assert.h>
 #include <fcntl.h>

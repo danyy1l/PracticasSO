@@ -11,7 +11,9 @@
 #ifndef _TYPES_H
 #define _TYPES_H
 
+#include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <sys/types.h>
 
 /** @name Tipos de datos enteros y flotantes
@@ -48,12 +50,6 @@ typedef double f64;   /**< Float 64 bit. 15 dig. precision */
     fprintf(stderr, "%s\n", msg);                                              \
     exit(EXIT_FAILURE);                                                        \
   } while (0)
-/**@}*/
-
-/** @name Extremos de tuberías (Pipes) */
-/**@{*/
-#define READ 0  /**< Índice del descriptor de archivo para lectura */
-#define WRITE 1 /**< Índice del descriptor de archivo para escritura */
 /**@}*/
 
 /** @name Banderas de estado */
