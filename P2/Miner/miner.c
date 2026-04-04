@@ -17,10 +17,7 @@
 #include "pow.h"
 #include "types.h"
 #include <assert.h>
-#include <bits/time.h>
-#include <bits/types/sigevent_t.h>
-#include <bits/types/struct_itimerspec.h>
-#include <bits/types/timer_t.h>
+#include <bits/types/sigset_t.h>
 #include <fcntl.h>
 #include <semaphore.h>
 #include <signal.h>
@@ -28,6 +25,8 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+
+#define TARGET_INIT 0 /**< Valor de inicializacion del target */
 
 /**************************************************************************/
 /*-------------------------- FUNCIONES PRIVADAS --------------------------*/
@@ -95,6 +94,10 @@ void exit_network(const char *filename, Miner_Mutexes *sems) {
   sem_close(sems->pid);
 }
 
+/*******************************************/
+/*------- IMPLEMENTACION SEÑALES -----------*/
+/*******************************************/
+
 /**
  * Flag de timeout del minero
  * Mientras sea 0, el minero trabaja, en cuanto se acabe el tiempo y se reciba
@@ -103,14 +106,65 @@ void exit_network(const char *filename, Miner_Mutexes *sems) {
 volatile sig_atomic_t timeout = 0;
 
 /**
- * @brief Manejador de SIGALARM
- * Coloca el flag de timeout a 1, indicando que el minero ha terminado
- *
- * @param sig Numero de la señal a manejar (SIGALRM)
+ * Flag de comienzo de mineria
+ * Mientras sea 0, los mineros esperan
+ * Una vez a 1, comienza la ronda de mineria
+ * Se reseteara a 0 tras el comienzo de la ronda
  */
-void handler_SIGALARM(int sig) {
-  if (sig == SIGALRM)
+volatile sig_atomic_t start_mining = 0;
+
+/**
+ * Flag de comienzo de votacion
+ * Mientras este a 0, los mineros esperan y no votan
+ * Cuando se ponga a 1, comienza la ronda de votacion
+ * Se reseteara a 0 tras el comienzo de las votaciones
+ */
+volatile sig_atomic_t start_voting = 0;
+
+/**
+ * @brief Manejador de señales
+ * Coloca el flag de timeout a 1, indicando que el minero ha terminado
+ * Coloca el flag de start_mining a 1, comenzando ronda de mineria
+ * Coloca el flag de start_voting a 1, comenzando ronda de votacion
+ *
+ * @param sig Numero de la señal a manejar (SIGALARM, SIGUSR1 o SIGUSR2)
+ */
+void handler(int sig) {
+  switch (sig) {
+  case SIGALRM:
     timeout = 1;
+    break;
+  case SIGUSR1:
+    start_mining = 1;
+    break;
+  case SIGUSR2:
+    start_voting = 1;
+    break;
+  }
+}
+
+/**
+ * @brief Hace el setup de las señales
+ * Simplemente enlaza el handler al struct de acciones de señal
+ */
+void setup_signals() {
+  struct sigaction act;
+  sigemptyset(&(act.sa_mask));
+
+  /* Bloqueo señales durante ejecucion de handler */
+  sigaddset(&(act.sa_mask), SIGALRM);
+  sigaddset(&(act.sa_mask), SIGUSR1);
+  sigaddset(&(act.sa_mask), SIGUSR2);
+
+  act.sa_flags = 0;
+  act.sa_handler = handler;
+
+  if (sigaction(SIGALRM, &act, NULL) == ERR)
+    die("sigaction SIGALRM");
+  if (sigaction(SIGUSR1, &act, NULL) == ERR)
+    die("sigaction SIGUSR1");
+  if (sigaction(SIGUSR2, &act, NULL) == ERR)
+    die("sigaction SIGUSR2");
 }
 
 /**
@@ -122,14 +176,6 @@ void handler_SIGALARM(int sig) {
  * @param timer Puntero a objeto timer_t
  */
 void miner_set_alarm(u64 seconds, timer_t *timer) {
-  struct sigaction act;
-  sigemptyset(&(act.sa_mask));
-  act.sa_flags = 0;
-
-  act.sa_handler = handler_SIGALARM;
-  if (sigaction(SIGALRM, &act, NULL) == ERR)
-    die("sigaction");
-
   /* Aqui definimos el comportamiento del timer, queremos que mande SIGALARM */
   struct sigevent sevent;
   sevent.sigev_notify = SIGEV_SIGNAL; // Decimos que al terminar envie señal
@@ -270,17 +316,84 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
   assert(miner_pipe != NULL);
   assert(logger_pipe != NULL);
 
-  timer_t m_timer;
-  miner_set_alarm(args->time, &m_timer);
+  setup_signals();
 
-  /* ZONA CRÍTICA --- PROCESO APUNTA SU PID */
+  /* ZONA CRITICA --- PROCESO APUNTA SU PID */
   sem_wait(sems->pid);
+  pid_t foo[256];
+  i32 n_active = get_active_pids_unlocked(PID_FILE, foo, -1, false);
+
+  bool first_miner = (n_active <= 0);
+
+  if (first_miner) {
+    // Es el primer minero
+    sem_wait(sems->tgt);
+    if (write_target_unlocked(TARGET_FILE, TARGET_INIT) == ERR) {
+      sem_post(sems->tgt);
+      sem_post(sems->pid);
+      die_msg("No se pudo escribir el target inicial");
+    }
+    sem_post(sems->tgt);
+  }
+
   if (write_pid_unlocked(PID_FILE) == ERR) {
     sem_post(sems->pid);
     sem_close(sems->pid);
     die_msg("No se pudo escribir en PIDs.pid");
   }
   sem_post(sems->pid);
+
+  if (first_miner) {
+    i32 miner_count = 0;
+
+    while (1) {
+      sem_wait(sems->pid);
+      /* El proceso se omite a si mismo, con esto evitamos un context switch
+       * innecesario */
+      miner_count = get_active_pids_unlocked(PID_FILE, foo, getpid(), false);
+      sem_post(sems->pid);
+
+      if (miner_count >= MIN_MINERS - 1) {
+        break;
+      }
+
+      sleep(1);
+    }
+
+    for (i32 i = 0; i < miner_count; i++) {
+      kill(foo[i], SIGUSR1);
+    }
+
+    /* De esta forma no hay que hacerse kill a uno mismo */
+    start_mining = 1;
+  } else {
+    /* Bloqueamos sigusr1 y sigalrm, con esto en vez de pause, no perdemos las
+     * señales que lleguen durante el bloqueo */
+    sigset_t block_mask, old_mask, wait_mask;
+    sigemptyset(&block_mask);
+    sigaddset(&block_mask, SIGUSR1);
+    sigaddset(&block_mask, SIGALRM);
+    sigprocmask(SIG_BLOCK, &block_mask, &old_mask);
+
+    /* Preparamos mascara de despertar al proceso (con sigusr1 o sigalrm) */
+    wait_mask = old_mask;
+    sigdelset(&wait_mask, SIGUSR1);
+    sigdelset(&wait_mask, SIGALRM);
+
+    /* El proceso duerme hasta que llegue la señal */
+    while (!start_mining && !timeout)
+      sigsuspend(&wait_mask);
+
+    /* Restauramos mascara original */
+    sigprocmask(SIG_SETMASK, &old_mask, NULL);
+  }
+
+  start_mining = 0;
+
+  /* Iniciamos el temporizador una vez comienza la mineria, no tendria sentido
+   * iniciarlo sin siquiera haber suficientes mineros */
+  timer_t m_timer;
+  miner_set_alarm(args->time, &m_timer);
 
   u64 target = 0;
   Logger_args logger_args = {0};
@@ -296,7 +409,7 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
       break;
 
     u64 sol = calcular_solucion(target, args);
-    i32 status;
+    i32 status; // Esto solo sirve para el read, es temporal
 
     logger_args.target = target;
     logger_args.id = getpid();

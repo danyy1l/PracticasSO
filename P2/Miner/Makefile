@@ -38,7 +38,7 @@ run: all
 	./$(EXE) 5 5 & ./$(EXE) 6 4 & ./$(EXE) 2 10 & wait 
 
 #Arreglo para que no quede en stall la terminal
-#No es cosa del programa al parecer es que espera a que presione Enter, pero el codigo funciona
+#No es cosa del programa al parecer espera a que presione Enter, pero el codigo funciona
 
 # Ejecutar con valgrind
 valgrind: all

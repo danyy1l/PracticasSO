@@ -54,7 +54,9 @@ typedef double f64;   /**< Float 64 bit. 15 dig. precision */
 
 /** @name Banderas de estado */
 /**@{*/
-#define FOUND 1 /**< Indica que un hilo ha encontrado solución */
+#define FOUND 1      /**< Indica que un hilo ha encontrado solución */
+#define MIN_MINERS 2 /**< Define el minimo de mineros para comenzar ronda */
+#define MAX_TRIES 10 /**< Define maximo de intentos de espera inactiva */
 /**@}*/
 
 /** @name Utilidades generales */

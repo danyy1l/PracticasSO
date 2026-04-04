@@ -18,8 +18,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#define TARGET_INIT 0 /**< Valor de inicializacion del target */
-
 /**
  * Parsea un numero en string a unsigned int de 64 bit de forma segura
  *
@@ -48,14 +46,6 @@ int main(int argc, char *argv[]) {
   data_miner.time = str_to_u64(argv[1]);
   data_miner.n_threads = str_to_u64(argv[2]);
 
-  /* INICIALIZACION DE TARGET */
-  sem_wait(sems.tgt);
-  if (write_target_unlocked(TARGET_FILE, TARGET_INIT) == ERR) {
-    sem_post(sems.tgt);
-    die("write_target");
-  }
-  sem_post(sems.tgt);
-
   /* APERTURA DE PIPES */
   open_pipes(miner_pipe, logger_pipe);
 
@@ -69,6 +59,12 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
 
   } else if (childpid == 0) {
+    /* El logger siendo hijo hereda los semaforos, hay que cerrarlos */
+    sem_close(sems.pid);
+    sem_close(sems.tgt);
+    sem_close(sems.vot);
+    sem_close(sems.win);
+
     /* Control de extremos de las tuberias */
     close(logger_pipe[READ]);
     close(miner_pipe[WRITE]);

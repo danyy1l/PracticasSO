@@ -61,5 +61,5 @@ i32 logger(i32 *miner_pipe, i32 *logger_pipe) {
   }
 
   close(fd_logger);
-  return EXIT_SUCCESS;
+  return status;
 }
