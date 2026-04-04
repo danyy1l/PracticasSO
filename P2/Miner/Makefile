@@ -35,8 +35,10 @@ clean:
 
 # Ejecutable base 5 segundos, 5 hilos | 6 seg 4 hilos | 2 seg 10 hilos
 run: all
-	./$(EXE) 5 5 & ./$(EXE) 6 4 & ./$(EXE) 2 10 & wait #Arreglo para que no quede en stall la terminal
-	#No es cosa del programa al parecer es que espera a que presione Enter, pero el codigo funciona
+	./$(EXE) 5 5 & ./$(EXE) 6 4 & ./$(EXE) 2 10 & wait 
+
+#Arreglo para que no quede en stall la terminal
+#No es cosa del programa al parecer es que espera a que presione Enter, pero el codigo funciona
 
 # Ejecutar con valgrind
 valgrind: all

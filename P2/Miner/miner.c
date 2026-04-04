@@ -82,6 +82,8 @@ void exit_network(const char *filename, Miner_Mutexes *sems) {
 
     for (i32 i = 0; i < n_active; i++)
       printf("- Process %7d\n", active_miners[i]);
+
+    printf("\n");
   }
 
   sem_post(sems->pid);
