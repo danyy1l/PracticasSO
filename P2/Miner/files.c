@@ -167,24 +167,22 @@ bool count_votes(const char *filename, pid_t winner_pid, u32 *out_positives) {
   u32 positives = 0, negatives = 0;
 
   FILE *fp = fopen(filename, "r");
-  if (fp == NULL)
-    die("fopen votes");
-
   printf("Winner %d => [ ", winner_pid);
+  if (fp != NULL) {
 
-  int character;
-  while ((character = fgetc(fp)) != EOF) {
-    if (character == 'Y') {
-      positives++;
-      printf("Y ");
-    } else if (character == 'N') {
-      negatives++;
-      printf("N ");
+    int character;
+    while ((character = fgetc(fp)) != EOF) {
+      if (character == 'Y') {
+        positives++;
+        printf("Y ");
+      } else if (character == 'N') {
+        negatives++;
+        printf("N ");
+      }
     }
+
+    fclose(fp);
   }
-
-  fclose(fp);
-
   bool accepted = (positives >= negatives);
 
   *out_positives = positives;

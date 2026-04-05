@@ -254,22 +254,22 @@ void wait_more_miners(Miner_Mutexes *sems) {
  * alguna señal durante la suspension no se pierda sino que ejecute su handler
  * una vez despierte
  */
-void wait_round_start() {
-  /* Bloqueamos sigusr1 y sigalrm, con esto en vez de pause, no perdemos
+void wait_signal(int sig, volatile sig_atomic_t *cond) {
+  /* Bloqueamos sig y sigalrm, con esto en vez de pause, no perdemos
    * las señales que lleguen durante el bloqueo */
   sigset_t block_mask, old_mask, wait_mask;
   sigemptyset(&block_mask);
-  sigaddset(&block_mask, SIGUSR1);
+  sigaddset(&block_mask, sig);
   sigaddset(&block_mask, SIGALRM);
   sigprocmask(SIG_BLOCK, &block_mask, &old_mask);
 
   /* Preparamos mascara de despertar al proceso (con sigusr1 o sigalrm) */
   wait_mask = old_mask;
-  sigdelset(&wait_mask, SIGUSR1);
+  sigdelset(&wait_mask, sig);
   sigdelset(&wait_mask, SIGALRM);
 
   /* El proceso duerme hasta que llegue la señal */
-  while (!start_mining && !timeout) {
+  while (!(*cond) && !timeout) {
     sigsuspend(&wait_mask);
   }
 
@@ -484,42 +484,11 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
 
   printf("\n");
 
+  wait_more_miners(sems);
+
   if (first_miner) {
-    i32 miner_count = 0;
-    u32 tries = 0;
-
-    while (tries < MAX_TRIES) {
-      sem_wait(sems->pid);
-      /* El proceso se omite a si mismo, con esto evitamos un context switch
-       * innecesario */
-      miner_count = get_active_pids_unlocked(PID_FILE, foo, getpid(), false);
-      sem_post(sems->pid);
-      if (miner_count == ERR) {
-        sem_close(sems->pid);
-        die_msg("miner.c - No se pudieron leer PIDs");
-      }
-
-      if (miner_count >= MIN_MINERS - 1) {
-        break;
-      }
-
-      ++tries;
-      sleep(1);
-    }
     printf("Starting mining!\n\n");
-
-    for (i32 i = 0; i < miner_count; i++) {
-      kill(foo[i], SIGUSR1);
-    }
-
-    /* De esta forma no hay que hacerse kill a uno mismo */
-    start_mining = 1;
-
-  } else {
-    wait_round_start();
   }
-
-  start_mining = 0;
 
   /* Iniciamos el temporizador una vez comienza la mineria, no tendria
    * sentido iniciarlo sin siquiera haber suficientes mineros */
@@ -546,8 +515,10 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
       first_miner = false; // Solo para primera ronda
     } else {
       /* No soy el ganador ni el primero */
-      wait_round_start();
+      wait_signal(SIGUSR1, &start_mining);
     }
+
+    start_mining = 0;
 
     sem_wait(sems->tgt);
     i32 target_read = read_target_unlocked(TARGET_FILE, &target);
@@ -567,6 +538,13 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
         /* Caso victorioso: Somos los primeros */
         i_win = true;
 
+        /* Limpiamos el archivo de votos */
+        sem_wait(sems->vot);
+        FILE *fp = fopen(VOTES_FILE, "w");
+        if (fp)
+          fclose(fp);
+        sem_post(sems->vot);
+
         sem_wait(sems->tgt);
         write_target_unlocked(TARGET_FILE, sol);
         sem_post(sems->tgt);
@@ -578,6 +556,11 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
       }
     }
 
+    /* Votantes esperan a que ganador de el OK para votar */
+    if (!i_win) {
+      wait_signal(SIGUSR2, &start_voting);
+    }
+
     /* VOTACION */
     if (start_voting && !timeout) {
       if (i_win) {
@@ -585,7 +568,9 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
         wait_votes(miner_count, sems);
 
         u32 positives;
+        sem_wait(sems->vot);
         bool accepted = count_votes(VOTES_FILE, getpid(), &positives);
+        sem_post(sems->vot);
 
         if (accepted) {
           sem_wait(sems->tgt);
