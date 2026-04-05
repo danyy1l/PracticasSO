@@ -52,7 +52,7 @@ i32 logger(i32 *miner_pipe, i32 *logger_pipe) {
     }
 
     dprintf(fd_logger, "%-12s%lu/%lu\n", "Votes:", arg.votes, arg.votes);
-    dprintf(fd_logger, "%-12s%lu:%lu\n\n", "Wallets:", arg.wallets, arg.id);
+    dprintf(fd_logger, "%-12s%lu:%lu\n\n", "Wallets:", arg.id, arg.wallets);
 
     if (write(logger_pipe[WRITE], &status, sizeof(i32)) == ERR) {
       status = EXIT_FAILURE;

@@ -24,9 +24,9 @@ typedef struct {
   u64 id;        /**< Numero de ronda */
   u64 target;    /**< Objetivo de la ronda */
   u64 solution;  /**< Valor que resuelve el POW */
-  u64 votes;     /**< Numero de ronda */
-  u64 wallets;   /**< En principio, id padre:numero ronda */
-  pid_t winner;  /**< ID Proceso padre */
+  u64 votes;     /**< Numero de votos a favor */
+  u64 wallets;   /**< Id padre:Rondas ganadas */
+  pid_t winner;  /**< ID Proceso ganador */
   i32 validated; /**< Booleano que representa validez de la solucion */
 } Logger_args;
 

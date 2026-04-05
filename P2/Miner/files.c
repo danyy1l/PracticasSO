@@ -149,3 +149,52 @@ i32 get_active_pids_unlocked(const char *filename, pid_t *active_miners,
   fclose(fp);
   return pid_counter;
 }
+
+void write_vote(const char *filename, char vote) {
+  if (filename == NULL)
+    die("write_vote");
+
+  FILE *fp = fopen(filename, "a");
+  if (fp == NULL)
+    die("fopen voting");
+
+  fputc(vote, fp);
+
+  fclose(fp);
+}
+
+bool count_votes(const char *filename, pid_t winner_pid, u32 *out_positives) {
+  u32 positives = 0, negatives = 0;
+
+  FILE *fp = fopen(filename, "r");
+  if (fp == NULL)
+    die("fopen votes");
+
+  printf("Winner %d => [ ", winner_pid);
+
+  int character;
+  while ((character = fgetc(fp)) != EOF) {
+    if (character == 'Y') {
+      positives++;
+      printf("Y ");
+    } else if (character == 'N') {
+      negatives++;
+      printf("N ");
+    }
+  }
+
+  fclose(fp);
+
+  bool accepted = (positives >= negatives);
+
+  *out_positives = positives;
+
+  printf("] => %s\n", accepted ? "Accepted" : "Rejected");
+
+  /* Limpiamos el archivo de votaciones */
+  fp = fopen(VOTES_FILE, "w");
+  if (fp != NULL)
+    fclose(fp);
+
+  return accepted;
+}

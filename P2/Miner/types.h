@@ -57,6 +57,10 @@ typedef double f64;   /**< Float 64 bit. 15 dig. precision */
 #define FOUND 1      /**< Indica que un hilo ha encontrado solución */
 #define MIN_MINERS 2 /**< Define el minimo de mineros para comenzar ronda */
 #define MAX_TRIES 10 /**< Define maximo de intentos de espera inactiva */
+#define MAX_MINERS                                                             \
+  256 /**< Define el maximo de mineros que acepto. En principio, no se hace el \
+         handling de que nunca supere el numero porque no es el objetivo. La   \
+         macro solo sirve para inicializar los arrays de pids */
 /**@}*/
 
 /** @name Utilidades generales */

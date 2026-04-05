@@ -2,7 +2,7 @@ EXE=mrush
 CC=cc
 CFLAGS=-Wall -Wextra -O3 -std=gnu99 -pedantic -g
 CLIBS=-lpthread -lrt # Libreria de tiempo real
-FILES=Target.tgt PIDs.pid Voting.vot
+FILES=$(wildcard *.log *.tgt *.pid *.vot)
 
 OBJ_DIR = obj
 
@@ -27,15 +27,13 @@ $(OBJ_DIR):
 ######### INSTRUCCIONES ESPECIALES ########
 
 #Borrar ficheros compilados, logs, documentacion y ejecutable
-#Hay que borrar el semaforo desde aqui porque ya no podemos hacer unlink
-#al haber multiples procesos
 clean:
-	-rm -rf *.log $(FILES)
+	-rm -rf $(FILES)
 	rm -rf DocumentacionMinero.pdf doc $(OBJ_DIR) $(EXE) test_logs
 
 # Ejecutable base 5 segundos, 5 hilos | 6 seg 4 hilos | 2 seg 10 hilos
 run: all
-	./$(EXE) 5 5 & ./$(EXE) 6 4 & ./$(EXE) 2 10 & wait 
+	./$(EXE) 3 8 & ./$(EXE) 5 8 & ./$(EXE) 10 8 & ./$(EXE) 10 1 & wait
 
 #Arreglo para que no quede en stall la terminal
 #No es cosa del programa al parecer espera a que presione Enter, pero el codigo funciona

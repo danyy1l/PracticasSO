@@ -5,7 +5,7 @@
  * * Contiene la implementación de las funciones de cálculo del POW, así como la
  * lógica del miner implementación de las funciones de cálculo del POW, así como
  * la lógica del minero y el IPC entre minero y registrador
- * @version 1.0
+ * @version 2.0
  * @date 2026-02-12
  *
  * @copyright (c) 2026 Author. All Rights Reserved.
@@ -17,7 +17,6 @@
 #include "pow.h"
 #include "types.h"
 #include <assert.h>
-#include <bits/types/sigset_t.h>
 #include <fcntl.h>
 #include <semaphore.h>
 #include <signal.h>
@@ -57,7 +56,10 @@ void comunicar_logger(i32 *miner_pipe, Logger_args *args) {
  * @param mutex_winner MutEx que protege al ganador de ronda
  */
 void exit_network(const char *filename, Miner_Mutexes *sems) {
-  pid_t active_miners[256];
+  assert(filename != NULL);
+  assert(sems != NULL);
+
+  pid_t active_miners[MAX_MINERS];
 
   sem_wait(sems->pid);
 
@@ -176,6 +178,8 @@ void setup_signals() {
  * @param timer Puntero a objeto timer_t
  */
 void miner_set_alarm(u64 seconds, timer_t *timer) {
+  assert(timer != NULL);
+
   /* Aqui definimos el comportamiento del timer, queremos que mande SIGALARM */
   struct sigevent sevent;
   sevent.sigev_notify = SIGEV_SIGNAL; // Decimos que al terminar envie señal
@@ -201,10 +205,116 @@ void miner_set_alarm(u64 seconds, timer_t *timer) {
     die("timer_settime");
 }
 
-/**************************************************************************/
-/*----------------------- IMPLEMENTACION FUNCIONES -----------------------*/
-/**************************************************************************/
+/***********************************/
+/*------- ESPERA INACTIVA ---------*/
+/***********************************/
 
+/**
+ * @brief Espera a que se unan mas mineros a la red
+ * En comentarios, tenemos la opcion de que la espera tambien se haga con un
+ * maximo de intentos para prevenir que el proceso se quede en stall
+ *
+ * @param sems Estructura de semaforos del sistema
+ */
+void wait_more_miners(Miner_Mutexes *sems) {
+  pid_t foo[MAX_MINERS];
+  i32 miner_count = 0;
+  // u32 tries = 0;
+
+  while (!timeout) {
+    sem_wait(sems->pid);
+    miner_count = get_active_pids_unlocked(PID_FILE, foo, -1, false);
+    sem_post(sems->pid);
+    if (miner_count == ERR) {
+      sem_close(sems->pid);
+      die_msg("miner.c - No se pudieron leer PIDs");
+    }
+
+    if (miner_count >= MIN_MINERS)
+      break;
+
+    /*
+    if( tries == MAX_TRIES ){
+      sem_close(sems->pid);
+      sem_close(sems->tgt);
+      sem_close(sems->vot);
+      sem_close(sems->win);
+      die_msg("Waited too long for more miners. Killing system...")
+    }
+    */
+
+    //++tries;
+    sleep(1);
+  }
+}
+
+/**
+ * @brief Espera a la llegada de SIGUSR1 o SIGALRM de forma segura
+ * Con sigsuspend y sigprocmask suspendemos el proceso de forma que si recibe
+ * alguna señal durante la suspension no se pierda sino que ejecute su handler
+ * una vez despierte
+ */
+void wait_round_start() {
+  /* Bloqueamos sigusr1 y sigalrm, con esto en vez de pause, no perdemos
+   * las señales que lleguen durante el bloqueo */
+  sigset_t block_mask, old_mask, wait_mask;
+  sigemptyset(&block_mask);
+  sigaddset(&block_mask, SIGUSR1);
+  sigaddset(&block_mask, SIGALRM);
+  sigprocmask(SIG_BLOCK, &block_mask, &old_mask);
+
+  /* Preparamos mascara de despertar al proceso (con sigusr1 o sigalrm) */
+  wait_mask = old_mask;
+  sigdelset(&wait_mask, SIGUSR1);
+  sigdelset(&wait_mask, SIGALRM);
+
+  /* El proceso duerme hasta que llegue la señal */
+  while (!start_mining && !timeout) {
+    sigsuspend(&wait_mask);
+  }
+
+  /* Restauramos mascara original */
+  if (sigprocmask(SIG_SETMASK, &old_mask, NULL) == ERR)
+    die("sigprocmask");
+}
+
+/**
+ * @brief Hace espera inactiva mientras los procesos que no han ganado votan
+ *
+ * @param votes Numero de votos esperados
+ * @param sems Semaforos del sistema
+ */
+void wait_votes(u32 votes, Miner_Mutexes *sems) {
+  u32 tries = 0;
+  long current_votes = 0;
+
+  /* Hacemos sondeo, comprobamos hasta maximo de intentos, timeout o que esten
+   * todos */
+  while (current_votes < votes && tries < MAX_TRIES && !timeout) {
+
+    sem_wait(sems->vot);
+    FILE *f = fopen(VOTES_FILE, "r");
+    if (f != NULL) {
+      fseek(f, 0, SEEK_END);
+      current_votes = ftell(f); // El tamaño en bytes = numero de letras
+      fclose(f);
+    }
+    sem_post(sems->vot);
+
+    if (current_votes < votes) {
+      tries++;
+      usleep(100000);
+    }
+  }
+}
+
+/**
+ * @brief Busca el valor objetivo en un rango dado
+ * Funcion de calculo
+ *
+ * @param arg Puntero a lista de argumentos
+ * @return Devuelve puntero al numero que consigue el valor objetivo
+ */
 void *pow_seek(void *arg) {
   assert(arg != NULL);
 
@@ -220,13 +330,14 @@ void *pow_seek(void *arg) {
     die("Error al reservar memoria para solucion de POW");
 
   for (i = args->min; i <= args->max; i++) {
-    if (*(args->found_value) == FOUND)
+    /* Ahora detenemos la busqueda si termina o toca votar */
+    if (*(args->found_value) == FOUND || start_voting || timeout)
       break;
 
     if (pow_hash(i) == args->target) {
       *(args->found_value) = FOUND;
       *pow_result = i;
-      //      printf("Solution accepted: %08lu --> %08lu\n", args->target, i);
+      // printf("Solution accepted: %08lu --> %08lu\n", args->target, i);
       return pow_result;
     }
   }
@@ -235,6 +346,14 @@ void *pow_seek(void *arg) {
   return NULL;
 }
 
+/**
+ * @brief Crea los hilos y separa la tarea
+ *
+ * @param target Objetivo de busqueda de la ronda
+ * @param miner_data Estructura con informacion para minero (tiempo y numero de
+ * hilos)
+ * @return Devuelve la solucion para el POW con objetivo args->target
+ */
 u64 calcular_solucion(u64 target, Miner_data *args) {
   /* VERIFICACION PARAMETROS DE ENTRADA */
   assert(args != NULL);
@@ -258,8 +377,8 @@ u64 calcular_solucion(u64 target, Miner_data *args) {
   for (u64 i = 0; i < args->n_threads; i++) {
     thread_args[i].target = target;
     thread_args[i].min = i * rango_busqueda;
-    /* Con el ternario aseguro que en el ultimo rango de todos llegue hasta el
-     * limite, podria quedarse corto */
+    /* Con el ternario aseguro que en el ultimo rango de todos llegue hasta
+     * el limite, podria quedarse corto */
     thread_args[i].max = (i == args->n_threads - 1)
                              ? (POW_LIMIT - 1)
                              : (i + 1) * rango_busqueda - 1;
@@ -274,7 +393,8 @@ u64 calcular_solucion(u64 target, Miner_data *args) {
         void *valor_retorno;
         pthread_join(hilos[j], &valor_retorno);
 
-        /* pow_seek reserva memoria, hay que recoger la solucion y liberarla */
+        /* pow_seek reserva memoria, hay que recoger la solucion y liberarla
+         */
         if (valor_retorno != NULL)
           free(valor_retorno);
       }
@@ -310,20 +430,36 @@ u64 calcular_solucion(u64 target, Miner_data *args) {
   return (found == 1) ? sol : (u64)ERR;
 }
 
+/********************************************************************/
+/*----------------------- FUNCIONES PUBLICAS -----------------------*/
+/********************************************************************/
+
 void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
             Miner_Mutexes *sems) {
   assert(args != NULL);
   assert(miner_pipe != NULL);
   assert(logger_pipe != NULL);
+  assert(sems != NULL);
 
   setup_signals();
 
   /* ZONA CRITICA --- PROCESO APUNTA SU PID */
   sem_wait(sems->pid);
-  pid_t foo[256];
-  i32 n_active = get_active_pids_unlocked(PID_FILE, foo, -1, false);
+  if (write_pid_unlocked(PID_FILE) == ERR) {
+    sem_post(sems->pid);
+    sem_close(sems->pid);
+    die_msg("No se pudo escribir en PIDs.pid");
+  }
 
-  bool first_miner = (n_active <= 0);
+  pid_t foo[MAX_MINERS];
+  i32 n_active = get_active_pids_unlocked(PID_FILE, foo, -1, false);
+  if (n_active == ERR) {
+    sem_post(sems->pid);
+    sem_close(sems->pid);
+    die_msg("miner.c - No se pudo leer PIDs");
+  }
+
+  bool first_miner = (n_active <= 1);
 
   if (first_miner) {
     // Es el primer minero
@@ -331,34 +467,46 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
     if (write_target_unlocked(TARGET_FILE, TARGET_INIT) == ERR) {
       sem_post(sems->tgt);
       sem_post(sems->pid);
+      sem_close(sems->tgt);
+      sem_close(sems->pid);
       die_msg("No se pudo escribir el target inicial");
     }
     sem_post(sems->tgt);
   }
 
-  if (write_pid_unlocked(PID_FILE) == ERR) {
-    sem_post(sems->pid);
-    sem_close(sems->pid);
-    die_msg("No se pudo escribir en PIDs.pid");
-  }
   sem_post(sems->pid);
+
+  /* Impresion al unirse un minero */
+  printf("Miner %d added to system\n\n", getpid());
+  printf("===== ACTIVE MINERS =====\n");
+  for (i32 i = 0; i < n_active; i++)
+    printf("- Process %7d\n", foo[i]);
+
+  printf("\n");
 
   if (first_miner) {
     i32 miner_count = 0;
+    u32 tries = 0;
 
-    while (1) {
+    while (tries < MAX_TRIES) {
       sem_wait(sems->pid);
       /* El proceso se omite a si mismo, con esto evitamos un context switch
        * innecesario */
       miner_count = get_active_pids_unlocked(PID_FILE, foo, getpid(), false);
       sem_post(sems->pid);
+      if (miner_count == ERR) {
+        sem_close(sems->pid);
+        die_msg("miner.c - No se pudieron leer PIDs");
+      }
 
       if (miner_count >= MIN_MINERS - 1) {
         break;
       }
 
+      ++tries;
       sleep(1);
     }
+    printf("Starting mining!\n\n");
 
     for (i32 i = 0; i < miner_count; i++) {
       kill(foo[i], SIGUSR1);
@@ -366,41 +514,41 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
 
     /* De esta forma no hay que hacerse kill a uno mismo */
     start_mining = 1;
+
   } else {
-    /* Bloqueamos sigusr1 y sigalrm, con esto en vez de pause, no perdemos las
-     * señales que lleguen durante el bloqueo */
-    sigset_t block_mask, old_mask, wait_mask;
-    sigemptyset(&block_mask);
-    sigaddset(&block_mask, SIGUSR1);
-    sigaddset(&block_mask, SIGALRM);
-    sigprocmask(SIG_BLOCK, &block_mask, &old_mask);
-
-    /* Preparamos mascara de despertar al proceso (con sigusr1 o sigalrm) */
-    wait_mask = old_mask;
-    sigdelset(&wait_mask, SIGUSR1);
-    sigdelset(&wait_mask, SIGALRM);
-
-    /* El proceso duerme hasta que llegue la señal */
-    while (!start_mining && !timeout)
-      sigsuspend(&wait_mask);
-
-    /* Restauramos mascara original */
-    sigprocmask(SIG_SETMASK, &old_mask, NULL);
+    wait_round_start();
   }
 
   start_mining = 0;
 
-  /* Iniciamos el temporizador una vez comienza la mineria, no tendria sentido
-   * iniciarlo sin siquiera haber suficientes mineros */
+  /* Iniciamos el temporizador una vez comienza la mineria, no tendria
+   * sentido iniciarlo sin siquiera haber suficientes mineros */
   timer_t m_timer;
   miner_set_alarm(args->time, &m_timer);
 
   u64 target = 0;
-  Logger_args logger_args = {0};
-  logger_args.winner = getpid();
-  logger_args.validated = 1;
+  u32 round = 1;
+  bool i_win = false;
 
   while (!timeout) {
+    wait_more_miners(sems);
+
+    sem_wait(sems->pid);
+    i32 miner_count = get_active_pids_unlocked(PID_FILE, foo, getpid(), false);
+    sem_post(sems->pid);
+
+    /* Caso ganador o primero minero */
+    if (i_win || first_miner) {
+      for (i32 i = 0; i < miner_count; i++)
+        kill(foo[i], SIGUSR1);
+
+      start_mining = 1;
+      first_miner = false; // Solo para primera ronda
+    } else {
+      /* No soy el ganador ni el primero */
+      wait_round_start();
+    }
+
     sem_wait(sems->tgt);
     i32 target_read = read_target_unlocked(TARGET_FILE, &target);
     sem_post(sems->tgt);
@@ -408,25 +556,83 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
     if (target_read == ERR)
       break;
 
+    i_win = false;
+
+    /* BUSQUEDA DE SOLUCION */
     u64 sol = calcular_solucion(target, args);
-    i32 status; // Esto solo sirve para el read, es temporal
 
-    logger_args.target = target;
-    logger_args.id = getpid();
-    logger_args.solution = sol;
-    logger_args.validated = (target == 0) ? 0 : 1;
-    logger_args.votes = 0;
-    logger_args.wallets = logger_args.winner;
+    if (sol != (u64)ERR && !start_voting && !timeout) {
+      /* Check de si somos primeros */
+      if (sem_trywait(sems->win) == 0) {
+        /* Caso victorioso: Somos los primeros */
+        i_win = true;
 
-    comunicar_logger(miner_pipe, &logger_args);
+        sem_wait(sems->tgt);
+        write_target_unlocked(TARGET_FILE, sol);
+        sem_post(sems->tgt);
 
-    if (read(logger_pipe[READ], &status, sizeof(i32)) <= 0)
-      break;
+        for (i32 i = 0; i < miner_count; i++)
+          kill(foo[i], SIGUSR2);
+
+        start_voting = 1;
+      }
+    }
+
+    /* VOTACION */
+    if (start_voting && !timeout) {
+      if (i_win) {
+        /* El ganador espera a que todos voten y hace recuento */
+        wait_votes(miner_count, sems);
+
+        u32 positives;
+        bool accepted = count_votes(VOTES_FILE, getpid(), &positives);
+
+        if (accepted) {
+          sem_wait(sems->tgt);
+          write_target_unlocked(TARGET_FILE, sol);
+          sem_post(sems->tgt);
+
+          Logger_args logger_args = {0};
+          logger_args.winner = getpid();
+          logger_args.id = round;
+          logger_args.solution = sol;
+          logger_args.target = target;
+          logger_args.validated = accepted;
+          logger_args.votes = positives;
+
+          comunicar_logger(miner_pipe, &logger_args);
+
+          i32 status;
+          if (read(logger_pipe[READ], &status, sizeof(i32)) <= 0)
+            break;
+        }
+      } else {
+        /* El votante solo valida la solucion y escribe su voto */
+        u64 read_sol;
+        sem_wait(sems->tgt);
+        read_target_unlocked(TARGET_FILE, &read_sol);
+        sem_post(sems->tgt);
+
+        char is_valid = pow_hash(read_sol) == target ? 'Y' : 'N';
+
+        sem_wait(sems->vot);
+        write_vote(VOTES_FILE, is_valid);
+        sem_post(sems->vot);
+      }
+
+      start_voting = 0;
+
+      if (i_win)
+        sem_post(sems->win);
+    }
+
+    round++;
   }
 
   timer_delete(m_timer);
 
   /* Mando señal de finalizacion */
+  Logger_args logger_args = {0};
   logger_args.target = (u64)ERR;
   comunicar_logger(miner_pipe, &logger_args);
 

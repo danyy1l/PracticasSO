@@ -115,4 +115,22 @@ i32 write_target_unlocked(const char *filename, u64 target);
 i32 get_active_pids_unlocked(const char *filename, pid_t *active_miners,
                              pid_t removed_pid, bool cleanup);
 
+/**
+ * @brief Escribe el voto del proceso en el fichero
+ *
+ * @param filename Nombre del fichero con votos
+ * @param vote Char con voto (Y or N)
+ */
+void write_vote(const char *filename, char vote);
+
+/**
+ * @brief Hace el recuento de votos de la solucion
+ *
+ * @param filename Nombre de fichero con votos del resto
+ * @param winner_pid PID del proceso ganador de la ronda
+ * @param out_positives Puntero en el que se guardan el numero de positivos
+ * @return TRUE si la solucion ha sido aceptada, FALSE en caso contrario
+ */
+bool count_votes(const char *filename, pid_t winner_pid, u32 *out_positives);
+
 #endif

@@ -58,23 +58,4 @@ typedef struct {
 void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
             Miner_Mutexes *sems);
 
-/**
- * @brief Busca el valor objetivo en un rango dado
- * Funcion de calculo
- *
- * @param arg Puntero a lista de argumentos
- * @return Devuelve puntero al numero que consigue el valor objetivo
- */
-void *pow_seek(void *arg);
-
-/**
- * @brief Crea los hilos y separa la tarea
- *
- * @param target Objetivo de busqueda de la ronda
- * @param miner_data Estructura con informacion para minero (tiempo y numero de
- * hilos)
- * @return Devuelve la solucion para el POW con objetivo args->target
- */
-u64 calcular_solucion(u64 target, Miner_data *args);
-
 #endif
