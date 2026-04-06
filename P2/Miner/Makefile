@@ -3,7 +3,7 @@ CC=cc
 CFLAGS=-Wall -Wextra -O3 -std=gnu99 -pedantic -g
 CLIBS=-lpthread -lrt # Libreria de tiempo real
 FILES=$(wildcard *.log *.tgt *.pid *.vot)
-VALG = valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --trace-children=yes --log-file=memcheck-%p.log
+VALG=valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --trace-children=yes --log-file=memcheck-%p.log
 
 OBJ_DIR = obj
 
@@ -45,7 +45,7 @@ valgrind: all
 
 # Ejecutar con prueba de sincronizacion de hilos
 helgrind: all
-	valgrind --tool=helgrind --log-file=thread_check.log ./mrush 5 5
+	valgrind --tool=helgrind --log-file=thread_check.log ./mrush 5 5 & ./mrush 7 10
 
 # Generar documentacion
 doc:

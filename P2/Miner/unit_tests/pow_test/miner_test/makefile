@@ -4,7 +4,7 @@ CFLAGS=-c -Wall -Wextra -std=gnu99 -pedantic -g
 
 ###########################################################################
 
-$(EXE): miner_test.o files.o miner.o logger.o pow.o
+$(EXE): miner_test.o miner.o logger.o pow.o
 	$(CC) -o $(EXE) $^
 
 %.o: %.c

@@ -22,6 +22,7 @@
 /******************************* DATOS PUBLICOS ****************************/
 
 /**
+ * @struct Arg_hilos
  * @brief Estructura para manejo de argumentos de hilos
  * Servira para guardar valores para busqueda de hash a traves de POW
  */
@@ -33,6 +34,7 @@ typedef struct {
 } Arg_hilos;
 
 /**
+ * @struct Miner_data
  * @brief Estructura para manejo de argumentos de Minero
  * Servira para guardar los datos relevantes para el minero
  */

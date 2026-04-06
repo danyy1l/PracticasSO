@@ -12,6 +12,14 @@
 #define _MINER_TEST_H
 
 /**
+ * @test Test open_pipes
+ * @pre Pointers to file descriptor arrays
+ * @post Initialized pipes in fd pointers
+ */
+void test1_open_pipes();
+void test2_open_pipes();
+
+/**
  * @test Test calcular_solucion
  */
 void test1_calcular_solucion();

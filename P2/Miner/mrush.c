@@ -106,6 +106,9 @@ u64 str_to_u64(char *input) {
   if (errno == ERANGE)
     die("Desbordamiento! El numero introducido es demasiado grande o negativo");
 
+  if (strchr(input, '-'))
+    die_msg("No se aceptan parámetros negativos");
+
   /* strtoul coloca endptr en el primer digito que no sea un numero luego si
    * coincide en el principio es que no habia ningun numero valido */
   if (endptr == input)

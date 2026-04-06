@@ -11,7 +11,9 @@
 #ifndef _TYPES_H
 #define _TYPES_H
 
+#include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <sys/types.h>
 
 /** @name Tipos de datos enteros y flotantes
@@ -50,15 +52,15 @@ typedef double f64;   /**< Float 64 bit. 15 dig. precision */
   } while (0)
 /**@}*/
 
-/** @name Extremos de tuberías (Pipes) */
-/**@{*/
-#define READ 0  /**< Índice del descriptor de archivo para lectura */
-#define WRITE 1 /**< Índice del descriptor de archivo para escritura */
-/**@}*/
-
 /** @name Banderas de estado */
 /**@{*/
-#define FOUND 1 /**< Indica que un hilo ha encontrado solución */
+#define FOUND 1      /**< Indica que un hilo ha encontrado solución */
+#define MIN_MINERS 2 /**< Define el minimo de mineros para comenzar ronda */
+#define MAX_TRIES 10 /**< Define maximo de intentos de espera inactiva */
+#define MAX_MINERS                                                             \
+  256 /**< Define el maximo de mineros que acepto. En principio, no se hace el \
+         handling de que nunca supere el numero porque no es el objetivo. La   \
+         macro solo sirve para inicializar los arrays de pids */
 /**@}*/
 
 /** @name Utilidades generales */

@@ -40,14 +40,18 @@ int main(int argc, char **argv) {
   }
 
   if (all || test == 1)
-    test1_calcular_solucion();
+    test1_open_pipes();
   if (all || test == 2)
-    test1_wait_votes_success();
+    test2_open_pipes();
   if (all || test == 3)
-    test2_wait_votes_timeout();
+    test1_calcular_solucion();
   if (all || test == 4)
-    test1_wait_more_miners_success();
+    test1_wait_votes_success();
   if (all || test == 5)
+    test2_wait_votes_timeout();
+  if (all || test == 6)
+    test1_wait_more_miners_success();
+  if (all || test == 7)
     test2_wait_more_miners_timeout();
 
   PRINT_PASSED_PERCENTAGE;
@@ -130,8 +134,6 @@ void test1_wait_more_miners_success() {
 
   pid_t dummy_miner = fork();
   if (dummy_miner == 0) {
-    close_mutexes(&sems);
-
     sleep(2);
     exit(0);
   } else {
@@ -154,7 +156,7 @@ void test1_wait_more_miners_success() {
   }
 }
 
-void test2_wait_more_miners_timeout() {
+void test1_wait_more_miners_timeout() {
   Miner_Mutexes sems;
   initialize_mutexes(&sems);
 

@@ -38,7 +38,6 @@
 /**@}*/
 
 /**
- * @struct Miner_Mutexes
  * @brief Define el struct de mutexes que se usan en el proyecto
  */
 typedef struct {

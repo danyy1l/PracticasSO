@@ -4,154 +4,81 @@ SHELL := $(shell command -v zsh || command -v bash || echo /bin/sh)
 # que me da el porcentaje de CPU utilizado, si no se tuviera esta shell,
 # pasaria a bash, y en caso critico a sh
 
-TARGET_INI = 0
-ROUNDS_FIJAS = 20
-THREADS_FIJOS = 4
+EXE = mrush
 
-.PHONY: test_threads test_rounds test_all
+.PHONY: test_hetero test_scaling test_network test_all clean_test_files
 
-# Prueba variando hilos
-test_threads20: $(EXE)
+# Utilidad para limpiar archivos compartidos entre pruebas
+clean_test_files:
+	@-rm -f test_logs/*.log
+
+# =======================================================================
+# Redes Heterogéneas
+# Demostrar que en la misma red, el minero con mas hilos gana mas
+# =======================================================================
+test_hetero: $(EXE)
 	@mkdir -p test_logs
-	@echo ""
-	@echo "======================================================="
-	@echo " PRUEBA 1: Variando número de hilos (Rondas fijas: $(ROUNDS_FIJAS))"
-	@echo "======================================================="
-	@echo ""
-	@echo "---> Ejecutando con 1 HILO"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 1
-	@echo ""
-	@echo "---> Ejecutando con 2 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 2
-	@echo ""
-	@echo "---> Ejecutando con 4 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 4
-	@echo ""
-	@echo "---> Ejecutando con 8 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 8
-	@echo ""
-	@echo "---> Ejecutando con 16 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 16
-	@echo ""
-	@echo "---> Ejecutando con 32 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 32
-	@echo ""
-	@echo "---> Ejecutando con 64 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 64
-
-# Prueba variando hilos
-test_threads40: $(EXE)
+	@echo "\n======================================================="
+	@echo " PRUEBA 1: Competición asimétrica (Distintos hilos en red)"
+	@echo "=======================================================\n"
+	@$(MAKE) clean_test_files
+	@echo "\n---> 6 MINEROS: 10 vida | [Mineros con 2, 4, 8, 10, 14 y 16 Hilos]"
+	@$(MAKE) clean_test_files
+	@cd test_logs && time ( ../$(EXE) 10 2 & ../$(EXE) 10 4 & ../$(EXE) 10 8 & ../$(EXE) 10 10 & ../$(EXE) 10 14 & ../$(EXE) 10 16 & wait )
+# =======================================================================
+# Escalado de Rendimiento y Degradación
+# Ver que a mas tiempo/hilos = mas rondas, pero pasarse colapsa el PC
+# =======================================================================
+test_scaling: $(EXE)
 	@mkdir -p test_logs
-	@echo ""
-	@echo "======================================================="
-	@echo " PRUEBA 1: Variando número de hilos (Rondas fijas: 40)"
-	@echo "======================================================="
-	@echo ""
-	@echo "---> Ejecutando con 1 HILO"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) 40 1
-	@echo ""
-	@echo "---> Ejecutando con 2 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) 40 2
-	@echo ""
-	@echo "---> Ejecutando con 4 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) 40 4
-	@echo ""
-	@echo "---> Ejecutando con 8 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) 40 8
-	@echo ""
-	@echo "---> Ejecutando con 16 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) 40 16
-	@echo ""
-	@echo "---> Ejecutando con 32 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) 40 32
-	@echo ""
-	@echo "---> Ejecutando con 64 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) 40 64
+	@echo "\n======================================================="
+	@echo " PRUEBA 2: Escalado y Degradación (Red fija de 3 Mineros)"
+	@echo "=======================================================\n"
+	@$(MAKE) clean_test_files
+	@echo "---> BASELINE: 5s de vida | 2 HILOS por minero"
+	@cd test_logs && time ( ../$(EXE) 5 2 & ../$(EXE) 5 2 & ../$(EXE) 5 2 & wait )
+	
+	@echo "\n---> MAS TIEMPO (Mas rondas): 10s de vida | 2 HILOS por minero"
+	@$(MAKE) clean_test_files
+	@cd test_logs && time ( ../$(EXE) 10 2 & ../$(EXE) 10 2 & ../$(EXE) 10 2 & wait )
+	
+	@echo "\n---> MAS HILOS (Calculo mas rapido): 10s de vida | 8 HILOS por minero"
+	@$(MAKE) clean_test_files
+	@cd test_logs && time ( ../$(EXE) 10 8 & ../$(EXE) 10 8 & ../$(EXE) 10 8 & wait )
+	
+	@echo "\n---> DEGRADACION (Sobrecarga CPU): 10s de vida | 128 HILOS por minero (Rendimiento caerá)"
+	@$(MAKE) clean_test_files
+	@cd test_logs && time ( ../$(EXE) 10 128 & ../$(EXE) 10 128 & ../$(EXE) 10 128 & wait )
 
-# Prueba variando hilos
-test_threads100: $(EXE)
+# =======================================================================
+# Contención de Red (Overhead de IPC y Semáforos)
+# Ver cómo el "System Time" sube al escalar procesos de 2 a 10
+# =======================================================================
+test_network: $(EXE)
 	@mkdir -p test_logs
-	@echo ""
-	@echo "======================================================="
-	@echo " PRUEBA 1: Variando número de hilos (Rondas fijas: 100)"
-	@echo "======================================================="
-	@echo ""
-	@echo "---> Ejecutando con 1 HILO"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) 100 1
-	@echo ""
-	@echo "---> Ejecutando con 2 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) 100 2
-	@echo ""
-	@echo "---> Ejecutando con 4 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) 100 4
-	@echo ""
-	@echo "---> Ejecutando con 8 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) 100 8
-	@echo ""
-	@echo "---> Ejecutando con 16 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) 100 16
-	@echo ""
-	@echo "---> Ejecutando con 32 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) 100 32
-	@echo ""
-	@echo "---> Ejecutando con 64 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) 100 64
+	@echo "\n======================================================="
+	@echo " PRUEBA 3: Estrés de Red (IPC Overhead)"
+	@echo " Fijos: 5s de vida | 4 HILOS por minero"
+	@echo "=======================================================\n"
+	@$(MAKE) clean_test_files
+	@echo "---> Red de 2 MINEROS simultáneos"
+	@cd test_logs && time ( ../$(EXE) 5 4 & ../$(EXE) 5 4 & wait )
+	
+	@echo "\n---> Red de 3 MINEROS simultáneos"
+	@$(MAKE) clean_test_files
+	@cd test_logs && time ( ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & wait )
+	
+	@echo "\n---> Red de 5 MINEROS simultáneos"
+	@$(MAKE) clean_test_files
+	@cd test_logs && time ( ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & wait )
+	
+	@echo "\n---> Red de 10 MINEROS simultáneos (Colisión de semáforos)"
+	@$(MAKE) clean_test_files
+	@cd test_logs && time ( ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & wait )
+	
+	@echo "\n---> Red de 20 MINEROS simultáneos (Alta colisión de semáforos)"
+	@$(MAKE) clean_test_files
+	@cd test_logs && time ( ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & ../$(EXE) 5 4 & wait )
 
-test_threads_best: $(EXE)
-	@mkdir -p test_logs
-	@echo ""
-	@echo "======================================================="
-	@echo " PRUEBA 1: Variando número de hilos (Rondas fijas: $(ROUNDS_FIJAS))"
-	@echo "======================================================="
-	@echo ""
-	@echo "---> Ejecutando con 8 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 8
-	@echo ""
-	@echo "---> Ejecutando con 9 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 9
-	@echo ""
-	@echo "---> Ejecutando con 10 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 10
-	@echo ""
-	@echo "---> Ejecutando con 11 HILO"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 11
-	@echo ""
-	@echo "---> Ejecutando con 12 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 12
-	@echo ""
-	@echo "---> Ejecutando con 13 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 13
-	@echo ""
-	@echo "---> Ejecutando con 14 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 14
-	@echo ""
-	@echo "---> Ejecutando con 15 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 15
-	@echo ""
-	@echo "---> Ejecutando con 16 HILOS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) $(ROUNDS_FIJAS) 16
-	@echo ""
-
-
-# Prueba variando rondas
-test_rounds: $(EXE)
-	@mkdir -p test_logs
-	@echo ""
-	@echo "======================================================="
-	@echo " PRUEBA 2: Variando número de rondas (Hilos fijos: $(THREADS_FIJOS))"
-	@echo "======================================================="
-	@echo ""
-	@echo "---> Ejecutando con 10 RONDAS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) 10 $(THREADS_FIJOS)
-	@echo ""
-	@echo "---> Ejecutando con 50 RONDAS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) 50 $(THREADS_FIJOS)
-	@echo ""
-	@echo "---> Ejecutando con 100 RONDAS"
-	@cd test_logs && time ../$(EXE) $(TARGET_INI) 100 $(THREADS_FIJOS)
-	@echo ""
-
-
-test_all: test_threads20 test_rounds
-	@echo ""
-	@echo "=== TODAS LAS PRUEBAS DE RENDIMIENTO COMPLETADAS ==="
+test_all: test_hetero test_scaling test_network
+	@echo "\n=== TODAS LAS PRUEBAS DE RENDIMIENTO COMPLETADAS ==="
