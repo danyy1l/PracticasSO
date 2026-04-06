@@ -57,6 +57,11 @@ typedef struct {
 void initialize_mutexes(Miner_Mutexes *sems);
 
 /**
+ * @brief Libera la memoria de los semaforos
+ */
+void close_mutexes(Miner_Mutexes *sems);
+
+/**
  * @brief Apertura de tuberias
  *
  * @param miner_pipe Tuberia minero--->registrador

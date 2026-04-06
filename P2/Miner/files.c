@@ -31,6 +31,13 @@ void initialize_mutexes(Miner_Mutexes *sems) {
     die("sem_open");
 }
 
+void close_mutexes(Miner_Mutexes *sems) {
+  sem_close(sems->pid);
+  sem_close(sems->tgt);
+  sem_close(sems->vot);
+  sem_close(sems->win);
+}
+
 void open_pipes(i32 *miner_pipe, i32 *logger_pipe) {
   assert(miner_pipe != NULL);
   assert(logger_pipe != NULL);
