@@ -594,10 +594,6 @@ void *pow_seek(void *arg) {
 
   u64 i = 0;
 
-  u64 *pow_result = (u64 *)malloc(sizeof(u64));
-  if (pow_result == NULL)
-    die("Error al reservar memoria para solucion de POW");
-
   for (i = args->min; i <= args->max; i++) {
     /* Ahora detenemos la busqueda si termina o toca votar */
     if (*(args->found_value) == FOUND || start_voting || timeout)
@@ -605,13 +601,15 @@ void *pow_seek(void *arg) {
 
     if (pow_hash(i) == args->target) {
       *(args->found_value) = FOUND;
+      u64 *pow_result = (u64 *)malloc(sizeof(u64));
+      if (pow_result == NULL)
+        die("Error al reservar memoria para solucion de POW");
       *pow_result = i;
       // printf("Solution accepted: %08lu --> %08lu\n", args->target, i);
       return pow_result;
     }
   }
 
-  free(pow_result);
   return NULL;
 }
 
