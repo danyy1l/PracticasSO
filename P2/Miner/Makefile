@@ -3,6 +3,7 @@ CC=cc
 CFLAGS=-Wall -Wextra -O3 -std=gnu99 -pedantic -g
 CLIBS=-lpthread -lrt # Libreria de tiempo real
 FILES=$(wildcard *.log *.tgt *.pid *.vot)
+VALG = valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --trace-children=yes --log-file=memcheck-%p.log
 
 OBJ_DIR = obj
 
@@ -40,7 +41,7 @@ run: all
 
 # Ejecutar con valgrind
 valgrind: all
-	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --trace-children=yes --log-file=memcheck.log ./$(EXE) 1 10
+	$(VALG) ./$(EXE) 3 8 & $(VALG) ./$(EXE) 5 8 & $(VALG) ./$(EXE) 10 8 & $(VALG) ./$(EXE) 10 4 & wait
 
 # Ejecutar con prueba de sincronizacion de hilos
 helgrind: all
@@ -51,6 +52,14 @@ doc:
 	doxygen Doxyfile
 	$(MAKE) -C doc/latex
 	cp doc/latex/refman.pdf ./DocumentacionMinero.pdf
+
+fake: CFLAGS += -DFAKE
+fake:
+	$(MAKE) clean
+	$(MAKE) all CFLAGS="$(CFLAGS)"
+
+run_fake: fake
+	./$(EXE) 3 8 & ./$(EXE) 5 8 & ./$(EXE) 10 8 & ./$(EXE) 10 1 & wait
 
 # Makefile de tests
 -include tests.mk

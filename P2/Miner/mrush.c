@@ -98,7 +98,7 @@ u64 str_to_u64(char *input) {
 
   /* No usamos atoi porque los numeros usados son my grandes, es posible que
    * haya overflow */
-  u64 out = strtoul(input, &endptr, 10);
+  u64 out = strtoull(input, &endptr, 10);
 
   /* En el manual dice que en caso de desbordamiento strtoul anota ERANGE en
    * errno. Como nuestros datos se guardan en u64, si tambien fuera negativo lo

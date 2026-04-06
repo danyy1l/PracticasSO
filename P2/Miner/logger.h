@@ -24,14 +24,15 @@ typedef struct {
   u64 id;        /**< Numero de ronda */
   u64 target;    /**< Objetivo de la ronda */
   u64 solution;  /**< Valor que resuelve el POW */
-  u64 votes;     /**< Numero de votos a favor */
+  u64 pos_votes; /**< Numero de votos a favor */
+  u64 votes;     /**< Numero de votos totales */
   u64 wallets;   /**< Id padre:Rondas ganadas */
   pid_t winner;  /**< ID Proceso ganador */
   i32 validated; /**< Booleano que representa validez de la solucion */
 } Logger_args;
 
 /* Dejamos pid_t(4bytes) y validated(4 Byte) para el final para minimizar
- * padding y alinear struct a 48 bytes. Podriamos usar tipos de menor tamaño
+ * padding y alinear struct a 56 bytes. Podriamos usar tipos de menor tamaño
  * para validated, pero con 4 bytes conseguimos 0 bytes de padding */
 
 /**

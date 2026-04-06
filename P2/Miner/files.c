@@ -163,7 +163,8 @@ void write_vote(const char *filename, char vote) {
   fclose(fp);
 }
 
-bool count_votes(const char *filename, pid_t winner_pid, u32 *out_positives) {
+bool count_votes(const char *filename, pid_t winner_pid, u32 *out_positives,
+                 u32 *total) {
   u32 positives = 0, negatives = 0;
 
   FILE *fp = fopen(filename, "r");
@@ -183,9 +184,10 @@ bool count_votes(const char *filename, pid_t winner_pid, u32 *out_positives) {
 
     fclose(fp);
   }
-  bool accepted = (positives >= negatives);
+  bool accepted = (positives >= negatives) && (positives > 0);
 
   *out_positives = positives;
+  *total = positives + negatives;
 
   printf("] => %s\n", accepted ? "Accepted" : "Rejected");
 

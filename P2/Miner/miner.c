@@ -441,6 +441,11 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
   assert(logger_pipe != NULL);
   assert(sems != NULL);
 
+/* Cada minero pone una semilla aleatoria basada en el pid */
+#ifdef FAKE
+  srand(getpid() ^ time(NULL));
+#endif /* ifdef FAKE */
+
   setup_signals();
 
   /* ZONA CRITICA --- PROCESO APUNTA SU PID */
@@ -499,21 +504,30 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
   u32 round = 1;
   bool i_win = false;
 
+  u64 wallets = 0;
+
+  bool release_win = false;
+
   while (!timeout) {
     wait_more_miners(sems);
 
     sem_wait(sems->pid);
     i32 miner_count = get_active_pids_unlocked(PID_FILE, foo, getpid(), false);
-    sem_post(sems->pid);
 
     /* Caso ganador o primero minero */
     if (i_win || first_miner) {
+      /* Habria que enviar la señal mientras el fichero de pids esta locked para
+       * que no se actualice a mitad */
       for (i32 i = 0; i < miner_count; i++)
         kill(foo[i], SIGUSR1);
 
       start_mining = 1;
       first_miner = false; // Solo para primera ronda
+      sem_post(sems->pid);
+      /* Dejar unos ms para que el resto vuelvan de sigsuspend */
+      // usleep(5000);
     } else {
+      sem_post(sems->pid);
       /* No soy el ganador ni el primero */
       wait_signal(SIGUSR1, &start_mining);
     }
@@ -528,6 +542,7 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
       break;
 
     i_win = false;
+    release_win = false;
 
     /* BUSQUEDA DE SOLUCION */
     u64 sol = calcular_solucion(target, args);
@@ -537,6 +552,12 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
       if (sem_trywait(sems->win) == 0) {
         /* Caso victorioso: Somos los primeros */
         i_win = true;
+
+#ifdef FAKE
+        if (rand() % 100 < 10) {
+          sol = 99999999; // Ponemos una solucion false con 10% de probabilidad
+        }
+#endif /* ifdef FAKE */
 
         /* Limpiamos el archivo de votos */
         sem_wait(sems->vot);
@@ -568,29 +589,42 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
         wait_votes(miner_count, sems);
 
         u32 positives;
+        u32 total_votes;
         sem_wait(sems->vot);
-        bool accepted = count_votes(VOTES_FILE, getpid(), &positives);
+        bool accepted =
+            count_votes(VOTES_FILE, getpid(), &positives, &total_votes);
         sem_post(sems->vot);
 
         if (accepted) {
+          wallets++;
+
           sem_wait(sems->tgt);
           write_target_unlocked(TARGET_FILE, sol);
           sem_post(sems->tgt);
 
-          Logger_args logger_args = {0};
-          logger_args.winner = getpid();
-          logger_args.id = round;
-          logger_args.solution = sol;
-          logger_args.target = target;
-          logger_args.validated = accepted;
-          logger_args.votes = positives;
-
-          comunicar_logger(miner_pipe, &logger_args);
-
-          i32 status;
-          if (read(logger_pipe[READ], &status, sizeof(i32)) <= 0)
-            break;
+        } else {
+          /* Si la solucion era erronea, recuperamos el anterior target */
+          sem_wait(sems->tgt);
+          write_target_unlocked(TARGET_FILE, target);
+          sem_post(sems->tgt);
         }
+
+        /* Registramos la ronda sea aceptada o no */
+        Logger_args logger_args = {0};
+        logger_args.winner = getpid();
+        logger_args.id = round;
+        logger_args.solution = sol;
+        logger_args.target = target;
+        logger_args.validated = accepted;
+        logger_args.pos_votes = positives;
+        logger_args.votes = total_votes;
+        logger_args.wallets = wallets;
+
+        comunicar_logger(miner_pipe, &logger_args);
+
+        i32 status;
+        if (read(logger_pipe[READ], &status, sizeof(i32)) <= 0)
+          break;
       } else {
         /* El votante solo valida la solucion y escribe su voto */
         u64 read_sol;
@@ -607,14 +641,34 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
 
       start_voting = 0;
 
-      if (i_win)
+      if (i_win) {
         sem_post(sems->win);
+        release_win = true;
+        start_mining = 0;
+      }
     }
 
     round++;
   }
 
   timer_delete(m_timer);
+
+  /* Si muero habiendo ganado, el resto se quedan esperando y nunca continuan:
+   * Mandamos SIGUSR1 para que continuen*/
+  if (i_win) {
+    pid_t all_pids[MAX_MINERS];
+
+    sem_wait(sems->pid);
+    i32 active_pids =
+        get_active_pids_unlocked(PID_FILE, all_pids, getpid(), false);
+    sem_post(sems->pid);
+
+    for (i32 i = 0; i < active_pids; i++)
+      kill(all_pids[i], SIGUSR1);
+
+    if (!release_win)
+      sem_post(sems->win);
+  }
 
   /* Mando señal de finalizacion */
   Logger_args logger_args = {0};

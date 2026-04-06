@@ -129,8 +129,10 @@ void write_vote(const char *filename, char vote);
  * @param filename Nombre de fichero con votos del resto
  * @param winner_pid PID del proceso ganador de la ronda
  * @param out_positives Puntero en el que se guardan el numero de positivos
+ * @param total Puntero donde almacenar total de votos para logger
  * @return TRUE si la solucion ha sido aceptada, FALSE en caso contrario
  */
-bool count_votes(const char *filename, pid_t winner_pid, u32 *out_positives);
+bool count_votes(const char *filename, pid_t winner_pid, u32 *out_positives,
+                 u32 *total);
 
 #endif
