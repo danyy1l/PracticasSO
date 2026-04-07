@@ -222,18 +222,18 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
   sem_post(sems->pid);
 
   /* Impresion al unirse un minero */
-  printf("[%s] Miner %d added to system\n\n", get_time_str(), getpid());
-  printf("===== ACTIVE MINERS =====\n");
-  for (i32 i = 0; i < n_active; i++)
-    printf("- Process %7d\n", foo[i]);
+  // printf("[%s] Miner %d added to system\n\n", get_time_str(), getpid());
+  // printf("===== ACTIVE MINERS =====\n");
+  // for (i32 i = 0; i < n_active; i++)
+  //   printf("- Process %7d\n", foo[i]);
 
-  printf("\n");
+  // printf("\n");
 
   wait_more_miners(sems);
 
-  if (first_miner) {
-    printf("Starting mining!\n\n");
-  }
+  // if (first_miner) {
+  //   printf("Starting mining!\n\n");
+  // }
 
   /* Iniciamos el temporizador una vez comienza la mineria, no tendria
    * sentido iniciarlo sin siquiera haber suficientes mineros */
@@ -296,7 +296,7 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
 #ifdef FAKE
         if (rand() % 100 < 10) {
           sol = 99999999; // Ponemos una solucion false con 0,1 de probabilidad
-          printf("%d ha generado una solución falsa!\n", getpid());
+          printf("%d ha generado una solución falsa!\n", getpid())
         }
 #endif /* ifdef FAKE */
 
@@ -436,7 +436,7 @@ void exit_network(const char *filename, Miner_Mutexes *sems) {
       get_active_pids_unlocked(filename, active_miners, getpid(), true);
 
   if (n_active == 0) {
-    printf("Miner %d exited. No miners left in system.\n", getpid());
+    // printf("Miner %d exited. No miners left in system.\n", getpid());
 
     unlink(TARGET_FILE);
     unlink(VOTES_FILE);
@@ -447,13 +447,13 @@ void exit_network(const char *filename, Miner_Mutexes *sems) {
     sem_unlink(VOTES_MUTEX);
     sem_unlink(WINNER_MUTEX);
   } else {
-    printf("Miner %d exited system.\n\n", getpid());
-    printf("===== ACTIVE MINERS =====\n");
+    // printf("Miner %d exited system.\n\n", getpid());
+    // printf("===== ACTIVE MINERS =====\n");
 
-    for (i32 i = 0; i < n_active; i++)
-      printf("- Process %7d\n", active_miners[i]);
+    // for (i32 i = 0; i < n_active; i++)
+    //   printf("- Process %7d\n", active_miners[i]);
 
-    printf("\n");
+    // printf("\n");
   }
 
   sem_post(sems->pid);

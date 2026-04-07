@@ -1,20 +1,21 @@
-CC=cc
-EXE=pow_test
-CFLAGS=-c -Wall -Wextra -std=gnu99 -pedantic -g
+CC = gcc
+SRC_DIR = ../..
+VPATH = $(SRC_DIR)
 
-###########################################################################
+# Añadimos -I..
+CFLAGS = -Wall -Wextra -std=gnu99 -pedantic -g -I$(SRC_DIR) -I..
+CLIBS = 
 
-$(EXE): pow_test.o pow.o
-	$(CC) -o $(EXE) *.o
+EXE = pow_test
+OBJS = pow_test.o pow.o
 
-pow_test.o: pow_test.c
-	$(CC) $(CFLAGS) $^
+all: $(EXE)
 
-pow.o: pow.c
-	$(CC) $(CFLAGS) $^
+$(EXE): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(CLIBS)
 
-run:
-	$(MAKE); valgrind --leak-check=full ./$(EXE)
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf *.o $(EXE)
+	-rm -f *.o $(EXE)

@@ -1,14 +1,20 @@
-CC=gcc
-EXE=files_test
-CFLAGS=-c -Wall -Wextra -std=gnu99 -pedantic -g
+CC = gcc
+SRC_DIR = ../..
+VPATH = $(SRC_DIR)
+
+CFLAGS = -Wall -Wextra -std=gnu99 -pedantic -g -I$(SRC_DIR) -I..
+CLIBS = -lpthread
+
+EXE = files_test
+OBJS = files_test.o files.o
 
 all: $(EXE)
 
-$(EXE): files_test.o files.o
-	$(CC) -o $(EXE) files_test.o files.o -pthread
+$(EXE): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(CLIBS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) $<
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf *.o $(EXE) test_votes.dat test_target.dat
+	-rm -f *.o $(EXE)

@@ -1,17 +1,21 @@
-CC=gcc
-EXE=miner_test
-CFLAGS=-c -Wall -Wextra -std=gnu99 -pedantic -g
+CC = gcc
+SRC_DIR = ../..
+VPATH = $(SRC_DIR)
 
-###########################################################################
+# Añadimos -I..
+CFLAGS = -Wall -Wextra -std=gnu99 -pedantic -g -I$(SRC_DIR) -I..
+CLIBS = -lpthread -lrt 
 
-$(EXE): miner_test.o files.o miner.o logger.o pow.o
-	$(CC) -o $(EXE) $^
+EXE = miner_test
+OBJS = miner_test.o miner.o files.o logger.o pow.o
+
+all: $(EXE)
+
+$(EXE): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(CLIBS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) $^
-
-run:
-	$(MAKE); valgrind --leak-check=full ./$(EXE)
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf *.o $(EXE)
+	-rm -f *.o $(EXE)

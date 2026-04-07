@@ -22,6 +22,7 @@
 /******************************* DATOS PUBLICOS ****************************/
 
 /**
+ * @struct Arg_hilos
  * @brief Estructura para manejo de argumentos de hilos
  * Servira para guardar valores para busqueda de hash a traves de POW
  */
@@ -33,6 +34,7 @@ typedef struct {
 } Arg_hilos;
 
 /**
+ * @struct Miner_data
  * @brief Estructura para manejo de argumentos de Minero
  * Servira para guardar los datos relevantes para el minero
  */
@@ -41,8 +43,6 @@ typedef struct {
   u64 time;      /**< Tiempo en segundos de ejecucion del minero */
   u64 n_threads; /**< Numero de hilos en los que separar carga de trabajo */
 } Miner_data;
-
-/******************************* DATOS PRIVADOS ****************************/
 
 /**
  * @brief Gestiona toda la lógica del minero
@@ -58,11 +58,28 @@ typedef struct {
 void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
             Miner_Mutexes *sems);
 
-/** @name Funciones expuestas para testing */
-/**@{*/
+/***************************** FUNCIONES EXPUESTAS *************************/
+/* Expuestas en la cabecera principalmente para permitir el Testing Unitario */
+
+/**
+ * @brief Espera a que se unan mas mineros a la red
+ * @param sems Estructura de semaforos del sistema
+ */
 void wait_more_miners(Miner_Mutexes *sems);
+
+/**
+ * @brief Hace espera inactiva mientras los procesos que no han ganado votan
+ * @param votes Numero de votos esperados
+ * @param sems Semaforos del sistema
+ */
 void wait_votes(u32 votes, Miner_Mutexes *sems);
+
+/**
+ * @brief Crea los hilos y separa la tarea
+ * @param target Objetivo de busqueda de la ronda
+ * @param args Estructura con informacion para minero (tiempo y numero de hilos)
+ * @return Devuelve la solucion para el POW con objetivo
+ */
 u64 calcular_solucion(u64 target, Miner_data *args);
-/**@}*/
 
 #endif
