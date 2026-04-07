@@ -1,2 +1,0 @@
-a) Al mandar SIGUSR1 o SIGUSR2 no ocurre nada
-   Al mandar SIGINT el programa termina

@@ -1,3 +1,0 @@
-a) solo añadir kill(pid, sig);
-
-b) No se escribe nada, esta en pausa. Aparecen los caractere que has intentado escribir de golpe

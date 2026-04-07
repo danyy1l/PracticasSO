@@ -1,5 +1,0 @@
-a) no, solo se ejecuta cuando se recibe la señal
-b) No, dado que las mascaras se han vaciado (sigemptyset)
-c) Antes de recibir la señal
-d) act.sa_handler = SIG_IGN;
-e) SIGKILL (9) y SIGSTOP (19) no se pueden capturar

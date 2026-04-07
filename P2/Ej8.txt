@@ -1,3 +1,0 @@
-a) No termina el rpgrama sino que detiene el wait. Imprime el finishing wait y termina el programa
-b) Ignora la señal, solo termina el programa con un -9 o -19
-c) Tal vez una var global: static volatile sig_action_t got_signal = 0 y al ponerse a 1 en el handler, se hace el sem_wait (habiendose hecho un sem_post antes del primer print), y a partir de ahi terminar el programa. ??????

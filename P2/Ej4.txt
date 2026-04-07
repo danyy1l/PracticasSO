@@ -1,7 +1,0 @@
-
-a) El manejo se hace en: Linea 15, conectando la señal al handler personalizado
-                         Linea 19, configurando sigaction para que ejecute el handler cuando llegue SIGINT
-                         Linea 10, La propia funcion de manejo
-                         Lineas 26-29, Reaccion frente a la recepcion de la señal.
-
-b) Hay que usar una variable global porque el handler solo puede recibir un entero, no una direccion ni nada que pueda compartir con el main. Por eso hay que usar una variable con el mismo scope que el handler y el main. Además se hace volatil para que el compilador no la optimice y se lea siempre de RAM, así como sig_atomic_t para que se modifique en un solo paso de procesador, haciendo que no se interrumpa su gestion por otra señal y estatica para que el scope sea unicamente de ese archivo

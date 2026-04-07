@@ -1,4 +1,0 @@
-a) kill -l para lista
-   kill -L para tabla numerada
-
-b) 9, 19 ==> kill -L | grep "Nombre señal"
