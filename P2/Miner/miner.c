@@ -296,7 +296,7 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
 #ifdef FAKE
         if (rand() % 100 < 10) {
           sol = 99999999; // Ponemos una solucion false con 0,1 de probabilidad
-          printf("%d ha generado una solución falsa!\n", getpid())
+          printf("%d ha generado una solución falsa!\n", getpid());
         }
 #endif /* ifdef FAKE */
 
