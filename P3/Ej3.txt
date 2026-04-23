@@ -1,0 +1,3 @@
+a) En la memoria compartidaa se incrementa el valor mapped se imprime Counter : num y num aumenta. Porque la memoria compartida persiste en disco (es un fichero .dat) y los procesos solo se enlazan e incrementan el dato.
+
+b) No porque se guarda en binario

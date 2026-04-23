@@ -1,0 +1,7 @@
+a) 1º Intenta abrir fichero para lectura y escritura, rear si no existe, si existe da error - permisos lectura y escritura para usuario.
+   2º Si da error y es por existencia, vuelve a intentar abrirlo para lectura y escritura.
+
+  Si lo crea el proceso, imprime created
+  Si solo se enlaza, imprime open
+
+b) O_TRUNC

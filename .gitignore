@@ -1,0 +1,9 @@
+#Ignorar ficheros compilados y logs
+**/*.o
+**/*.log
+
+#Ignorar ficheros obj
+**/obj/
+
+#Ignorar carpeta visual
+.vscode/

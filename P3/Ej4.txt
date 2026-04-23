@@ -1,0 +1,5 @@
+a) No tendria sentido, porque el writer termina de ejecutarse el último, por lo que debe ser el que hace el unlink (borra todas las referencias a la mem compartida).
+
+b) No porque no va a escribir nada.
+
+c) shm_open crea la region sin mas o devuelve el fd si ya creado. mmap toma el recurso y lo colloca en la VAS del proceso para usarlo como si fuera un puntero normal.
