@@ -12,7 +12,7 @@
 #ifndef _MINER_H
 #define _MINER_H
 
-#include "files.h"
+#include "file_utils.h"
 #include "types.h"
 #include <pthread.h>
 #include <semaphore.h>

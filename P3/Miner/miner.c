@@ -12,7 +12,7 @@
  */
 
 #include "miner.h"
-#include "files.h"
+#include "file_utils.h"
 #include "logger.h"
 #include "pow.h"
 #include "types.h"
@@ -191,6 +191,11 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
 
   /* ZONA CRITICA --- PROCESO APUNTA SU PID */
   sem_wait(sems->pid);
+
+  // bool first_miner = false;
+  // if (access(PID_FILE, F_OK) == ERR)
+  //   first_miner = true;
+
   if (write_pid_unlocked(PID_FILE) == ERR) {
     sem_post(sems->pid);
     close_mutexes(sems);
@@ -464,6 +469,7 @@ void exit_network(const char *filename, Miner_Mutexes *sems) {
 
 void handler(int sig) {
   switch (sig) {
+  case SIGINT:
   case SIGALRM:
     timeout = 1;
     break;
@@ -494,6 +500,15 @@ void setup_signals() {
     die("sigaction SIGUSR1");
   if (sigaction(SIGUSR2, &act, NULL) == ERR)
     die("sigaction SIGUSR2");
+
+  sigset_t full_block;
+  sigemptyset(&full_block);
+  sigaddset(&full_block, SIGUSR1);
+  sigaddset(&full_block, SIGUSR2);
+  // NOTA: NO bloqueamos SIGALRM ni SIGINT porque queremos que puedan
+  // interrumpir el pow_seek
+  if (sigprocmask(SIG_BLOCK, &full_block, NULL) == ERR)
+    die("sigprocmask full");
 }
 
 void miner_set_alarm(u64 seconds, timer_t *timer) {
@@ -572,9 +587,7 @@ void wait_signal(int sig, volatile sig_atomic_t *cond) {
     sigsuspend(&wait_mask);
   }
 
-  /* Restauramos mascara original */
-  if (sigprocmask(SIG_SETMASK, &old_mask, NULL) == ERR)
-    die("sigprocmask");
+  /* Cambio aqui: No hace falta restaurar porque ya lo hace sigsuspend */
 }
 
 void wait_votes(u32 votes, Miner_Mutexes *sems) {
