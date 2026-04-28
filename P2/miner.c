@@ -192,9 +192,9 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
   /* ZONA CRITICA --- PROCESO APUNTA SU PID */
   sem_wait(sems->pid);
 
-  // bool first_miner = false;
-  // if (access(PID_FILE, F_OK) == ERR)
-  //   first_miner = true;
+  bool first_miner = false;
+  if (access(PID_FILE, F_OK) == ERR)
+    first_miner = true;
 
   if (write_pid_unlocked(PID_FILE) == ERR) {
     sem_post(sems->pid);
@@ -210,7 +210,7 @@ void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
     die_msg("miner.c - No se pudo leer PIDs");
   }
 
-  bool first_miner = (n_active <= 1);
+  first_miner = (n_active <= 1);
 
   if (first_miner) {
     // Es el primer minero
