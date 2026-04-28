@@ -500,6 +500,15 @@ void setup_signals() {
     die("sigaction SIGUSR1");
   if (sigaction(SIGUSR2, &act, NULL) == ERR)
     die("sigaction SIGUSR2");
+
+  sigset_t full_block;
+  sigemptyset(&full_block);
+  sigaddset(&full_block, SIGUSR1);
+  sigaddset(&full_block, SIGUSR2);
+  // NOTA: NO bloqueamos SIGALRM ni SIGINT porque queremos que puedan
+  // interrumpir el pow_seek
+  if (sigprocmask(SIG_BLOCK, &full_block, NULL) == ERR)
+    die("sigprocmask full");
 }
 
 void miner_set_alarm(u64 seconds, timer_t *timer) {
@@ -578,9 +587,7 @@ void wait_signal(int sig, volatile sig_atomic_t *cond) {
     sigsuspend(&wait_mask);
   }
 
-  /* Restauramos mascara original */
-  if (sigprocmask(SIG_SETMASK, &old_mask, NULL) == ERR)
-    die("sigprocmask");
+  /* Cambio aqui: No hace falta restaurar porque ya lo hace sigsuspend */
 }
 
 void wait_votes(u32 votes, Miner_Mutexes *sems) {
