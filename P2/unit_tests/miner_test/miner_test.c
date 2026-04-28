@@ -9,7 +9,7 @@
  */
 
 #include "miner_test.h"
-#include "files.h"
+#include "file_utils.h"
 #include "miner.h"
 #include "pow.h"
 #include "test.h"

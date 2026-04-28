@@ -8,7 +8,7 @@
  */
 
 #include "files_test.h"
-#include "files.h"
+#include "file_utils.h"
 #include "test.h"
 #include "types.h"
 #include <semaphore.h>

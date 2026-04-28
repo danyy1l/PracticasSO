@@ -9,8 +9,8 @@ OBJ_DIR = obj
 
 .PHONY: clean run doc test_threads test_rounds test_all
 
-HEADERS=miner.h pow.h logger.h types.h files.h
-OBJ= $(addprefix $(OBJ_DIR)/, pow.o files.o logger.o miner.o $(EXE).o)
+HEADERS=miner.h pow.h logger.h types.h file_utils.h
+OBJ= $(addprefix $(OBJ_DIR)/, pow.o file_utils.o logger.o miner.o $(EXE).o)
 
 ######### COMPILACION DE CODIGO ########
 

@@ -7,7 +7,7 @@
  * @date 2026-02-09
  */
 
-#include "files.h"
+#include "file_utils.h"
 #include "logger.h"
 #include "miner.h"
 #include "types.h"

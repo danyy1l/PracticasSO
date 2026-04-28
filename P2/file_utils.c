@@ -1,5 +1,5 @@
 /**
- * @file files.c
+ * @file file_utils.c
  * @author Danyyil Shykerynets
  * @brief Implementacion de manejo de archivos.
  * * Implementa las funciones necesarias para lectura y escritura en los
@@ -10,7 +10,7 @@
  * @copyright (c) 2026 Author. All Rights Reserved.
  */
 
-#include "files.h"
+#include "file_utils.h"
 #include "types.h"
 #include <assert.h>
 #include <fcntl.h>

@@ -12,7 +12,7 @@
  */
 
 #include "miner.h"
-#include "files.h"
+#include "file_utils.h"
 #include "logger.h"
 #include "pow.h"
 #include "types.h"

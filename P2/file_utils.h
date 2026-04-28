@@ -1,5 +1,5 @@
 /**
- * @file files.h
+ * @file file_utils.h
  * @author Danyyil Shykerynets
  * @brief Interfaz de manejo de archivos.
  * * Contiene las funciones necesarias para lectura y escritura en los ficheros
