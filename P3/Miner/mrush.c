@@ -10,6 +10,7 @@
 #include "file_utils.h"
 #include "logger.h"
 #include "miner.h"
+#include "shared.h"
 #include "types.h"
 #include <errno.h>
 #include <fcntl.h>
@@ -45,6 +46,13 @@ int main(int argc, char *argv[]) {
 
   data_miner.time = str_to_u64(argv[1]);
   data_miner.n_threads = str_to_u64(argv[2]);
+
+  /*SHARED MEMORY*/
+  SharedMinerData *shared_data = try_open_miner();
+  if (shared_data == NULL) {
+    die_msg("No se pudo abrir la memoria compartida");
+  }
+
 
   /* APERTURA DE PIPES */
   open_pipes(miner_pipe, logger_pipe);
