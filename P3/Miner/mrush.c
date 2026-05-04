@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
   data_miner.n_threads = str_to_u64(argv[2]);
 
   /*SHARED MEMORY*/
-  SharedMinerData *shared_data = try_open_miner();
+  SharedMinerData *shared_data = try_open_miner_shm();
   if (shared_data == NULL) {
     die_msg("No se pudo abrir la memoria compartida");
   }

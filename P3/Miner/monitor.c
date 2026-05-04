@@ -21,6 +21,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <signal.h>
+#include <mqueue.h>
 
 /***********************************/
 /*------------ SEÑALES ------------*/
@@ -36,6 +37,8 @@ int main(int argc, char *argv[]) {
   u64 lag_comprobador, lag_monitor;
   pid_t pid;
   SharedMinerData *shared_miner_data;
+  SharedMonitorData *shared_monitor_data;
+  mqd_t miner_queue;
 
   /* CONTROL DE ARGUMENTOS */
   if (argc != 3) {
@@ -47,12 +50,14 @@ int main(int argc, char *argv[]) {
   lag_monitor = str_to_u64(argv[2]);
 
   /* SHARED MEMORY */
+  /* Miner - Comprobador */
   shared_miner_data = create_miner_shm();
+  /* Comprobador - Monitor */
+  shared_monitor_data = create_monitor_shm();
 
   /* MESSAGE QUEUE */
   /* Miner - Comprobador */
-
-  /* Comprobador - Monitor */
+  miner_queue = create_miner_queue();
 
   /* HANDLER */
 
@@ -99,6 +104,7 @@ void monitor(u64 lag_monitor) {
     usleep(lag_monitor * 1000);
     /* Comprueba el estado del sistema*/
     //Down ( sem_fill ) ;
+
     //Down ( sem_mutex ) ;
     //ExtraerElemento () ;
     //Up ( sem_mutex ) ;
