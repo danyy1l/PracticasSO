@@ -2,8 +2,8 @@
  * @file shared.h
  * @author Fernando Blanco & Danyyil Shykerynets
  * @brief Interfaz de memoria compartida.
- * * Contiene las declaración de funciones y estructuras necesarios para el manejo
- * de la memoria compartida entre minero y monitor
+ * * Contiene las declaración de funciones y estructuras necesarios para el
+ * manejo de la memoria compartida entre minero y monitor
  * @version 1.0
  * @date 2026-04-01
  *
@@ -13,6 +13,7 @@
 #define _SHARED_H
 
 #include "types.h"
+#include <mqueue.h>
 #include <semaphore.h>
 
 #define MINER_SHM "/miner_data"
@@ -24,8 +25,8 @@
 #define MAX_MESSAGE_MONITOR 6
 
 typedef struct {
-    pid_t miner_pid;
-    u64 coins;
+  pid_t miner_pid;
+  u64 coins;
 } MinerWallet;
 
 typedef struct {
@@ -50,9 +51,9 @@ typedef struct {
   u64 target;
   u64 solution;
   u64 round;
-  pid_t miner_pid;  /* PID del minero "ganador"*/
-  bool accepted;    /* Si la solucion es valida o no*/
-  bool is_end;      /* Si es la ultima solucion del round */
+  pid_t miner_pid; /* PID del minero "ganador"*/
+  bool accepted;   /* Si la solucion es valida o no*/
+  bool is_end;     /* Si es la ultima solucion del round */
 } MonitorDataBlock;
 
 typedef struct {

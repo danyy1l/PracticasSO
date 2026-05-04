@@ -53,7 +53,6 @@ int main(int argc, char *argv[]) {
     die_msg("No se pudo abrir la memoria compartida");
   }
 
-
   /* APERTURA DE PIPES */
   open_pipes(miner_pipe, logger_pipe);
 
@@ -99,31 +98,4 @@ int main(int argc, char *argv[]) {
   // printf("Miner exited with status %d\n", EXIT_SUCCESS);
 
   return EXIT_SUCCESS;
-}
-
-u64 str_to_u64(char *input) {
-  char *endptr;
-
-  /* No usamos atoi porque los numeros usados son my grandes, es posible que
-   * haya overflow */
-  u64 out = strtoull(input, &endptr, 10);
-
-  /* En el manual dice que en caso de desbordamiento strtoul anota ERANGE en
-   * errno. Como nuestros datos se guardan en u64, si tambien fuera negativo lo
-   * convertiria a positivo y desbordaria */
-  if (errno == ERANGE)
-    die("Desbordamiento! El numero introducido es demasiado grande o negativo");
-
-  if (strchr(input, '-'))
-    die_msg("No se aceptan parámetros negativos");
-
-  /* strtoul coloca endptr en el primer digito que no sea un numero luego si
-   * coincide en el principio es que no habia ningun numero valido */
-  if (endptr == input)
-    die("Parámetro inválido, debe ser solo un numero");
-
-  if (*endptr != '\0')
-    die("Parámetro inválido, debe ser solo un número");
-
-  return out;
 }

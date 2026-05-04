@@ -10,18 +10,18 @@
 #include "file_utils.h"
 #include "logger.h"
 #include "miner.h"
-#include "types.h"
 #include "shared.h"
+#include "types.h"
 #include <errno.h>
 #include <fcntl.h>
+#include <mqueue.h>
 #include <semaphore.h>
+#include <signal.h>
 #include <string.h>
-#include <sys/wait.h>
-#include <unistd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <signal.h>
-#include <mqueue.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 /***********************************/
 /*------------ SEÑALES ------------*/
@@ -32,6 +32,9 @@
  * SIGINT, se pone a 1 y el monitor abandona la red
  */
 static volatile sig_atomic_t stop = 0;
+
+void comprobador(u64 lag_comprobador);
+void monitor(u64 lag_monitor);
 
 int main(int argc, char *argv[]) {
   u64 lag_comprobador, lag_monitor;
@@ -86,14 +89,14 @@ void comprobador(u64 lag_comprobador) {
     /* Espera el lag del comprobador (ms)*/
     usleep(lag_comprobador * 1000);
     /* Comprueba si hay un ganador*/
-    
+
     /**/
     /* Si hay ganador, comparte info con el monitor*/
-    //Down ( sem_empty ) ;
-    //Down ( sem_mutex ) ;
-    //AñadirElemento () ;
-    //Up ( sem_mutex ) ;
-    //Up ( sem_fill ) ;
+    // Down ( sem_empty ) ;
+    // Down ( sem_mutex ) ;
+    // AñadirElemento () ;
+    // Up ( sem_mutex ) ;
+    // Up ( sem_fill ) ;
     /**/
   }
 }
@@ -103,12 +106,17 @@ void monitor(u64 lag_monitor) {
     /* Espera el lag del monitor (ms)*/
     usleep(lag_monitor * 1000);
     /* Comprueba el estado del sistema*/
-    //Down ( sem_fill ) ;
+    // Down ( sem_fill ) ;
 
-    //Down ( sem_mutex ) ;
-    //ExtraerElemento () ;
-    //Up ( sem_mutex ) ;
-    //Up ( sem_empty ) ;
+    // Down ( sem_mutex ) ;
+    // ExtraerElemento () ;
+    // Up ( sem_mutex ) ;
+    // Up ( sem_empty ) ;
+    // Down ( sem_fill ) ;
+    // Down ( sem_mutex ) ;
+    // ExtraerElemento () ;
+    // Up ( sem_mutex ) ;
+    // Up ( sem_empty ) ;
     /* Imprime información sobre el estado del sistema*/
   }
 }

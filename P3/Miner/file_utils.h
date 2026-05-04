@@ -141,4 +141,12 @@ void write_vote(const char *filename, char vote);
 bool count_votes(const char *filename, pid_t winner_pid, u32 *out_positives,
                  u32 *total);
 
+/**
+ * Parsea un numero en string a unsigned int de 64 bit de forma segura
+ *
+ * @param input String a parsear
+ * @return Unsigned int de 64 bit o ERR en su caso
+ */
+u64 str_to_u64(char *input);
+
 #endif
