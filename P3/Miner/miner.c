@@ -17,16 +17,8 @@
 #include "shared.h"
 #include "types.h"
 #include "utils.h"
-#include <asm-generic/errno-base.h>
 #include <assert.h>
 #include <errno.h>
-#include <fcntl.h>
-#include <math.h>
-#include <mqueue.h>
-#include <semaphore.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>

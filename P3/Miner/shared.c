@@ -19,9 +19,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-/* ====================================== */
-/* == FUNCIONES DE CREACION (Monitor)  == */
-/* ====================================== */
+/* ************************************** */
+/* ** FUNCIONES DE CREACION (Monitor)  ** */
+/* ************************************** */
 
 SharedMinerData *create_miner_shm() {
   i32 fd = shm_open(MINER_SHM, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
@@ -128,9 +128,9 @@ SharedMonitorData *create_monitor_shm() {
   return shared;
 }
 
-/* ====================================== */
+/* ************************************** */
 /* == FUNCIONES DE CONEXION (Mineros)  == */
-/* ====================================== */
+/* ************************************** */
 
 SharedMinerData *try_open_miner_shm() {
   i32 fd = shm_open(MINER_SHM, O_RDWR, 0);
@@ -246,9 +246,9 @@ mqd_t try_open_miner_queue() {
   return mq;
 }
 
-/* ====================================== */
+/* ************************************** */
 /* ======== FUNCIONES DE CLEANUP ======== */
-/* ====================================== */
+/* ************************************** */
 
 void detach_miner_shm(SharedMinerData *shared) {
   if (shared != NULL && shared != MAP_FAILED) {

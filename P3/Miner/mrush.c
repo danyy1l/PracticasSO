@@ -1,6 +1,6 @@
 /**
  * @file mrush.c
- * @author Danyyil Shykerynets
+ * @author Danyyil Shykerynets & Fernando Blanco
  * @brief Punto de entrada del programa
  * * Contiene el main a ejecutar del programa
  * @version 1.0

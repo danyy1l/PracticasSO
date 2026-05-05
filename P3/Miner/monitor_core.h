@@ -1,6 +1,10 @@
 /**
  * @file monitor_core.h
  * @brief Cabeceras de las funciones principales del monitor y comprobador
+ * @author Fernando Blanco & Danyyil Shykerynets
+ *
+ * @version 1.0
+ * @Copyright (c) 2026 Author. All Rights Reserved.
  */
 #ifndef _MONITOR_CORE_H
 #define _MONITOR_CORE_H
