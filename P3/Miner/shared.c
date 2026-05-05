@@ -1,7 +1,16 @@
+/**
+ * @file shared.c
+ * @author Fernando Blanco
+ * @brief Implementa las utilidades de memoria compartida
+ *
+ * @version 1.0
+ * @Copyright (c) 2026 Author. All Rights Reserved.
+ */
 
 #include "shared.h"
 #include <errno.h>
 #include <fcntl.h>
+#include <mqueue.h>
 #include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,10 +18,10 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <mqueue.h>
 
-
-/* Shared Memory Functions */
+/* ====================================== */
+/* == FUNCIONES DE CREACION (Monitor)  == */
+/* ====================================== */
 
 SharedMinerData *create_miner_shm() {
   i32 fd = shm_open(MINER_SHM, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
@@ -23,13 +32,13 @@ SharedMinerData *create_miner_shm() {
       die_msg("El monitor ya ha creado la memoria compartida");
     } else
       die("shm_open");
+  }
 
-  } else {
-    if (ftruncate(fd, sizeof(SharedMinerData)) == ERR) {
-      perror("ftruncate");
-      close(fd);
-      exit(EXIT_FAILURE);
-    }
+  if (ftruncate(fd, sizeof(SharedMinerData)) == ERR) {
+    perror("ftruncate");
+    close(fd);
+    shm_unlink(MINER_SHM);
+    exit(EXIT_FAILURE);
   }
 
   SharedMinerData *shared = mmap(NULL, sizeof(SharedMinerData),
@@ -45,83 +54,47 @@ SharedMinerData *create_miner_shm() {
   printf("Creates Shared Memory. My PID: %d\n", getpid());
 
   /* Inicializar datos */
+  // Esto es necesario porque nuestro criterio de minero inactivo es pid == 0
   memset(shared, 0, sizeof(SharedMinerData));
 
-  if (sem_init(&shared->mutex, 1, 1) == ERR) {
-    perror("sem_init mutex");
+  if (sem_init(&shared->mutex, 1, 1) == ERR ||
+      sem_init(&shared->win, 1, 1) == ERR) {
+    perror("sem_init shared");
     munmap(shared, sizeof(SharedMinerData));
     shm_unlink(MINER_SHM);
     exit(EXIT_FAILURE);
   }
 
-  shared->miner_count = 0;
-  shared->miner_target = 0;
-  shared->active_miners = 0;
-
-  return shared;
-}
-
-SharedMinerData *try_open_miner_shm() {
-  i32 fd = shm_open(MINER_SHM, O_RDWR, 0);
-
-  if (fd == ERR) {
-    if (errno == ENOENT) {
-      // No existe la memoria compartida, el monitor no ha creado el sistema
-      die_msg("Monitor no ha creado memoria compartida");
-    } else
-      die("shm_open");
-  }
-
-  SharedMinerData *shared = mmap(NULL, sizeof(SharedMinerData),
-                                 PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-  close(fd);
-
-  if (shared == MAP_FAILED) {
-    perror("mmap");
-    exit(EXIT_FAILURE);
-  }
-
-  printf("Got miner data. My PID: %d\n", getpid());
-
-  sem_wait(&shared->mutex);
-  shared->miner_count++;
-  shared->active_miners++;
-  shared->miner_pids[shared->miner_count - 1] = getpid();
-  shared->miner_wallets[shared->miner_count - 1].miner_pid = getpid();
-  shared->miner_wallets[shared->miner_count - 1].coins = 0;
-  sem_post(&shared->mutex);
-
   return shared;
 }
 
 SharedMonitorData *create_monitor_shm() {
-  i32 fd =
-      shm_open(MONITOR_SHM, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+  i32 fd = shm_open(MONITOR_SHM, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
 
   if (fd == ERR) {
     if (errno == EEXIST) {
-      die_msg("El monitor ya ha creado la memoria compartida del buffer");
+      perror("El monitor ya ha creado la memoria compartida del buffer");
     } else {
-      die("shm_open");
+      perror("shm_open");
     }
+    return NULL;
   }
 
   if (ftruncate(fd, sizeof(SharedMonitorData)) == ERR) {
     perror("ftruncate");
     close(fd);
     shm_unlink(MONITOR_SHM);
-    exit(EXIT_FAILURE);
+    return NULL;
   }
 
-  SharedMonitorData *shared =
-      mmap(NULL, sizeof(SharedMonitorData), PROT_READ | PROT_WRITE, MAP_SHARED,
-           fd, 0);
+  SharedMonitorData *shared = mmap(NULL, sizeof(SharedMonitorData),
+                                   PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   close(fd);
 
   if (shared == MAP_FAILED) {
     perror("mmap");
     shm_unlink(MONITOR_SHM);
-    exit(EXIT_FAILURE);
+    return NULL;
   }
 
   memset(shared, 0, sizeof(SharedMonitorData));
@@ -130,7 +103,7 @@ SharedMonitorData *create_monitor_shm() {
     perror("sem_init mutex");
     munmap(shared, sizeof(SharedMonitorData));
     shm_unlink(MONITOR_SHM);
-    exit(EXIT_FAILURE);
+    return NULL;
   }
 
   if (sem_init(&shared->empty, 1, MAX_MESSAGE_MONITOR) == ERR) {
@@ -138,7 +111,7 @@ SharedMonitorData *create_monitor_shm() {
     sem_destroy(&shared->mutex);
     munmap(shared, sizeof(SharedMonitorData));
     shm_unlink(MONITOR_SHM);
-    exit(EXIT_FAILURE);
+    return NULL;
   }
 
   if (sem_init(&shared->fill, 1, 0) == ERR) {
@@ -147,13 +120,64 @@ SharedMonitorData *create_monitor_shm() {
     sem_destroy(&shared->mutex);
     munmap(shared, sizeof(SharedMonitorData));
     shm_unlink(MONITOR_SHM);
-    exit(EXIT_FAILURE);
+    return NULL;
   }
 
-  shared->write_idx = 0;
-  shared->read_idx = 0;
-
   printf("Creates Monitor Shared Memory. My PID: %d\n", getpid());
+
+  return shared;
+}
+
+/* ====================================== */
+/* == FUNCIONES DE CONEXION (Mineros)  == */
+/* ====================================== */
+
+SharedMinerData *try_open_miner_shm() {
+  i32 fd = shm_open(MINER_SHM, O_RDWR, 0);
+  bool registered = false;
+
+  if (fd == ERR) {
+    if (errno == ENOENT) {
+      // No existe la memoria compartida, el monitor no ha creado el sistema
+      perror("Monitor no ha creado memoria compartida");
+    } else
+      perror("shm_open");
+
+    return NULL;
+  }
+
+  SharedMinerData *shared = mmap(NULL, sizeof(SharedMinerData),
+                                 PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  close(fd);
+
+  if (shared == MAP_FAILED) {
+    perror("mmap");
+    return NULL;
+  }
+
+  printf("Got miner data. My PID: %d\n", getpid());
+
+  /* REGION CRITICA */
+  sem_wait(&shared->mutex);
+
+  for (int i = 0; i < MAX_MINERS; i++) {
+    if (shared->miners[i].miner_pid == 0) { // Se ha hallado hueco en la red
+      shared->miners[i].miner_pid = getpid();
+      shared->miners[i].coins = 0;
+      shared->miners[i].current_vote = '\0';
+      shared->active_miners++;
+      registered = true;
+      break;
+    }
+  }
+
+  sem_post(&shared->mutex);
+
+  if (registered == false) {
+    munmap(shared, sizeof(SharedMinerData));
+    fprintf(stderr, "Red llena, no se pudo añadir el minero\n");
+    return NULL;
+  }
 
   return shared;
 }
@@ -163,20 +187,20 @@ SharedMonitorData *try_open_monitor_shm() {
 
   if (fd == ERR) {
     if (errno == ENOENT) {
-      die_msg("Monitor no ha creado memoria compartida del buffer");
+      perror("Monitor no ha creado memoria compartida del buffer");
     } else {
-      die("shm_open");
+      perror("shm_open");
     }
+    return NULL;
   }
 
-  SharedMonitorData *shared =
-      mmap(NULL, sizeof(SharedMonitorData), PROT_READ | PROT_WRITE, MAP_SHARED,
-           fd, 0);
+  SharedMonitorData *shared = mmap(NULL, sizeof(SharedMonitorData),
+                                   PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   close(fd);
 
   if (shared == MAP_FAILED) {
     perror("mmap");
-    exit(EXIT_FAILURE);
+    return NULL;
   }
 
   printf("Got monitor data. My PID: %d\n", getpid());
@@ -184,9 +208,7 @@ SharedMonitorData *try_open_monitor_shm() {
   return shared;
 }
 
-
-
-/* Message Queue Functions */
+/* === FUNCIONES DE COLA DE MENSAJES === */
 
 mqd_t create_miner_queue() {
   struct mq_attr attr;
@@ -197,30 +219,79 @@ mqd_t create_miner_queue() {
 
   mq_unlink(MINER_MQ); /* fuerza inicializacion limpia */
 
-  mqd_t mq = mq_open(MINER_MQ, O_CREAT | O_EXCL | O_RDONLY,
-                     S_IRUSR | S_IWUSR, &attr);
-  if (mq == (mqd_t)-1) {
+  mqd_t mq =
+      mq_open(MINER_MQ, O_CREAT | O_EXCL | O_RDONLY, S_IRUSR | S_IWUSR, &attr);
+  if (mq == (mqd_t)ERR) {
     if (errno == EEXIST) {
-      die_msg("Monitor ya ha creado la cola de mensajes");
+      perror("Monitor ya ha creado la cola de mensajes");
     } else {
-      die("mq_open monitor");
+      perror("mq_open monitor");
     }
+    return (mqd_t)ERR;
   }
 
   return mq;
 }
 
 mqd_t try_open_miner_queue() {
-  mqd_t mq = mq_open(MINER_MQ, O_RDONLY);
-  if (mq == (mqd_t)-1) {
+  mqd_t mq = mq_open(MINER_MQ, O_WRONLY);
+  if (mq == (mqd_t)ERR) {
     if (errno == ENOENT) {
-      die_msg("Monitor no ha creado la cola de mensajes");
+      perror("Monitor no ha creado la cola de mensajes");
     } else
-      die("mq_open monitor");
+      perror("mq_open monitor");
+    return (mqd_t)ERR;
   }
 
   return mq;
 }
 
+/* ====================================== */
+/* ======== FUNCIONES DE CLEANUP ======== */
+/* ====================================== */
 
-// TODO: Exit y unlink, eliminar pid al salir, etc etc
+void detach_miner_shm(SharedMinerData *shared) {
+  if (shared != NULL && shared != MAP_FAILED) {
+
+    /* ZONA CRITICA */
+    sem_wait(&shared->mutex);
+
+    for (int i = 0; i < MAX_MINERS; i++) {
+      if (shared->miners[i].miner_pid == getpid()) {
+        shared->miners[i].miner_pid = 0; // Liberamos el hueco
+        shared->active_miners--;
+        break;
+      }
+    }
+
+    sem_post(&shared->mutex);
+
+    munmap(shared, sizeof(SharedMinerData));
+  }
+}
+
+void destroy_miner_shm(SharedMinerData *shared) {
+  if (shared != NULL && shared != MAP_FAILED) {
+    sem_destroy(&shared->mutex);
+    sem_destroy(&shared->win);
+    munmap(shared, sizeof(SharedMinerData));
+  }
+  shm_unlink(MINER_SHM);
+}
+
+void destroy_monitor_shm(SharedMonitorData *shared) {
+  if (shared != NULL && shared != MAP_FAILED) {
+    sem_destroy(&shared->mutex);
+    sem_destroy(&shared->empty);
+    sem_destroy(&shared->fill);
+    munmap(shared, sizeof(SharedMonitorData));
+  }
+  shm_unlink(MONITOR_SHM);
+}
+
+void destroy_miner_queue(mqd_t mq) {
+  if (mq != (mqd_t)ERR) {
+    mq_close(mq);
+  }
+  mq_unlink(MINER_MQ);
+}

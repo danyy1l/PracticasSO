@@ -1,47 +1,28 @@
 /**
  * @file monitor.c
- * @author Danyyil Shykerynets
+ * @author Danyyil Shykerynets & Fernando Blanco
  * @brief Punto de entrada del programa
  * * Contiene el main a ejecutar del programa
  * @version 1.0
  * @date 2026-04-28
  */
 
-#include "file_utils.h"
-#include "logger.h"
-#include "miner.h"
+#include "monitor_core.h"
 #include "shared.h"
-#include "types.h"
-#include <errno.h>
-#include <fcntl.h>
-#include <mqueue.h>
-#include <semaphore.h>
-#include <signal.h>
-#include <string.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
+#include "utils.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
-/***********************************/
-/*------------ SEÑALES ------------*/
-/***********************************/
-/**
- * Flag de stop del monitor
- * Mientras sea 0, el monitor trabaja, en cuanto se reciba
- * SIGINT, se pone a 1 y el monitor abandona la red
- */
-static volatile sig_atomic_t stop = 0;
-
-void comprobador(u64 lag_comprobador);
-void monitor(u64 lag_monitor);
-
 int main(int argc, char *argv[]) {
   u64 lag_comprobador, lag_monitor;
-  pid_t pid;
-  SharedMinerData *shared_miner_data;
-  SharedMonitorData *shared_monitor_data;
-  mqd_t miner_queue;
+  pid_t child_pid;
+  int exit_status = EXIT_SUCCESS;
+
+  SharedMinerData *miner_shm;
+  SharedMonitorData *monitor_shm;
+  mqd_t miner_mq = (mqd_t)ERR;
 
   /* CONTROL DE ARGUMENTOS */
   if (argc != 3) {
@@ -52,85 +33,61 @@ int main(int argc, char *argv[]) {
   lag_comprobador = str_to_u64(argv[1]);
   lag_monitor = str_to_u64(argv[2]);
 
+  setup_interrupt();
+
   /* SHARED MEMORY */
   /* Miner - Comprobador */
-  shared_miner_data = create_miner_shm();
+  miner_shm = create_miner_shm();
+  if (miner_shm == NULL) {
+    fprintf(stderr, "No se pudo crear shm de mineros\n");
+    exit_status = EXIT_FAILURE;
+    goto cleanup_miner;
+  }
+
   /* Comprobador - Monitor */
-  shared_monitor_data = create_monitor_shm();
+  monitor_shm = create_monitor_shm();
+  if (monitor_shm == NULL) {
+    fprintf(stderr, "No se pudo crear shm de monitor\n");
+    exit_status = EXIT_FAILURE;
+    goto cleanup_monitor;
+  }
 
   /* MESSAGE QUEUE */
   /* Miner - Comprobador */
-  miner_queue = create_miner_queue();
-
-  /* HANDLER */
+  miner_mq = create_miner_queue();
+  if (miner_mq == (mqd_t)ERR) {
+    fprintf(stderr, "No se pudo crear message queue\n");
+    exit_status = EXIT_FAILURE;
+    goto cleanup_queue;
+  }
 
   /* MAIN LOOP */
-  pid = fork();
-  if (pid == ERR) {
-    /* Libera recursos */
-    //------>
-    /**/
-    die("fork monitor");
-  }
+  child_pid = fork();
 
-  if (pid == 0) {
-    /* PROCESO COMPROBADOR */
-    comprobador(lag_comprobador);
-  } else {
+  if (child_pid == ERR) {
+    perror("fork_monitor");
+    exit_status = EXIT_FAILURE;
+  } else if (child_pid == 0) {
     /* PROCESO MONITOR */
-    monitor(lag_monitor);
+    monitor(lag_monitor, monitor_shm);
+    detach_miner_shm(miner_shm);
+    exit(EXIT_SUCCESS);
+  } else {
+    /* PROCESO COMPROBADOR */
+    comprobador(lag_comprobador, miner_shm, monitor_shm, miner_mq);
+    printf("Comprobador exited successfully\n");
+    waitpid(child_pid, NULL, 0);
   }
 
-  printf("Hola");
-}
+cleanup_queue:
+  if (miner_mq != (mqd_t)ERR)
+    destroy_miner_queue(miner_mq);
+cleanup_monitor:
+  if (monitor_shm != NULL)
+    destroy_monitor_shm(monitor_shm);
+cleanup_miner:
+  if (miner_shm != NULL)
+    destroy_miner_shm(miner_shm);
 
-void comprobador(u64 lag_comprobador) {
-  while (!stop) {
-    /* Espera el lag del comprobador (ms)*/
-    usleep(lag_comprobador * 1000);
-    /* Comprueba si hay un ganador*/
-
-    /**/
-    /* Si hay ganador, comparte info con el monitor*/
-    // Down ( sem_empty ) ;
-    // Down ( sem_mutex ) ;
-    // AñadirElemento () ;
-    // Up ( sem_mutex ) ;
-    // Up ( sem_fill ) ;
-    /**/
-  }
-}
-
-void monitor(u64 lag_monitor) {
-  while (!stop) {
-    /* Espera el lag del monitor (ms)*/
-    usleep(lag_monitor * 1000);
-    /* Comprueba el estado del sistema*/
-    // Down ( sem_fill ) ;
-
-    // Down ( sem_mutex ) ;
-    // ExtraerElemento () ;
-    // Up ( sem_mutex ) ;
-    // Up ( sem_empty ) ;
-    // Down ( sem_fill ) ;
-    // Down ( sem_mutex ) ;
-    // ExtraerElemento () ;
-    // Up ( sem_mutex ) ;
-    // Up ( sem_empty ) ;
-    /* Imprime información sobre el estado del sistema*/
-  }
-}
-
-/**
- * @brief Manejador de señales
- * Coloca el flag de stop a 1, indicando que el monitor ha terminado
- *
- * @param sig Numero de la señal a manejar (SIGALARM, SIGUSR1 o SIGUSR2)
- */
-void handler(int sig) {
-  switch (sig) {
-  case SIGINT:
-    stop = 1;
-    break;
-  }
+  return exit_status;
 }

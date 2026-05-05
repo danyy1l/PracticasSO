@@ -1,22 +1,33 @@
-EXE=mrush
+EXE_MINER=mrush
+EXE_MONITOR=monitor
 CC=cc
 CFLAGS=-Wall -Wextra -O3 -std=gnu99 -pedantic -g
 CLIBS=-lpthread -lrt # Libreria de tiempo real
-FILES=$(wildcard *.log *.tgt *.pid *.vot)
 VALG=valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --trace-children=yes --log-file=memcheck-%p.log
 
 OBJ_DIR = obj
 
-.PHONY: clean run doc test_threads test_rounds test_all
+.PHONY: clean run doc test_threads test_rounds test_all valgrind helgrind
 
-HEADERS=miner.h pow.h logger.h types.h file_utils.h
-OBJ= $(addprefix $(OBJ_DIR)/, pow.o file_utils.o logger.o miner.o $(EXE).o)
+HEADERS=miner.h pow.h logger.h types.h utils.h shared.h monitor_core.h
+#
+# Objetos para el Minero
+OBJ_MINER_FILES = pow.o utils.o logger.o miner.o shared.o mrush.o
+OBJ_MINER = $(addprefix $(OBJ_DIR)/, $(OBJ_MINER_FILES))
+
+# Objetos para el Monitor
+OBJ_MONITOR_FILES = pow.o utils.o shared.o monitor_core.o monitor.o
+OBJ_MONITOR = $(addprefix $(OBJ_DIR)/, $(OBJ_MONITOR_FILES))
+
 
 ######### COMPILACION DE CODIGO ########
 
-all: $(EXE)
+all: $(EXE_MINER) $(EXE_MONITOR)
 
-$(EXE): $(OBJ)
+$(EXE_MINER): $(OBJ_MINER)
+	$(CC) -o $@ $^ $(CLIBS)
+
+$(EXE_MONITOR): $(OBJ_MONITOR)
 	$(CC) -o $@ $^ $(CLIBS)
 
 $(OBJ_DIR)/%.o : %.c $(HEADERS) | $(OBJ_DIR)
@@ -29,23 +40,36 @@ $(OBJ_DIR):
 
 #Borrar ficheros compilados, logs, documentacion y ejecutable
 clean:
-	-rm -rf $(FILES)
-	rm -rf DocumentacionMinero.pdf doc $(OBJ_DIR) $(EXE) test_logs
+	-rm -rf *.log
+	rm -rf DocumentacionMinero.pdf doc $(OBJ_DIR) $(EXE_MINER) $(EXE_MONITOR) test_logs
 
-# Ejecutable base 5 segundos, 5 hilos | 6 seg 4 hilos | 2 seg 10 hilos
+# Ejecucion completa: Arranca monitor, espera 1s para que inicialice SHM, arranca mineros
 run: all
-	./$(EXE) 3 8 & ./$(EXE) 5 8 & ./$(EXE) 10 8 & ./$(EXE) 10 1 & wait
-
-#Arreglo para que no quede en stall la terminal
-#No es cosa del programa al parecer espera a que presione Enter, pero el codigo funciona
+	./$(EXE_MONITOR) 10 500 & \
+	sleep 1; \
+	./$(EXE_MINER) 3 8 & \
+	./$(EXE_MINER) 5 8 & \
+	./$(EXE_MINER) 10 8 & \
+	./$(EXE_MINER) 10 1 & \
+	wait
 
 # Ejecutar con valgrind
 valgrind: all
-	$(VALG) ./$(EXE) 3 8 & $(VALG) ./$(EXE) 5 8 & $(VALG) ./$(EXE) 10 8 & $(VALG) ./$(EXE) 10 4 & wait
+	./$(EXE_MONITOR) 10 500 & \
+	sleep 1; \
+	$(VALG) ./$(EXE_MINER) 3 8 & \
+	$(VALG) ./$(EXE_MINER) 5 8 & \
+	$(VALG) ./$(EXE_MINER) 10 8 & \
+	$(VALG) ./$(EXE_MINER) 10 4 & \
+	wait
 
 # Ejecutar con prueba de sincronizacion de hilos
 helgrind: all
-	valgrind --tool=helgrind --log-file=thread_check.log ./mrush 5 5 & ./mrush 7 10
+	./$(EXE_MONITOR) 10 500 & \
+	sleep 1; \
+	valgrind --tool=helgrind --log-file=thread_check.log ./$(EXE_MINER) 5 5 & \
+	./$(EXE_MINER) 7 10 & \
+	wait
 
 # Generar documentacion
 doc:
@@ -59,7 +83,13 @@ fake:
 	$(MAKE) all CFLAGS="$(CFLAGS)"
 
 run_fake: fake
-	./$(EXE) 3 8 & ./$(EXE) 5 8 & ./$(EXE) 10 8 & ./$(EXE) 10 1 & wait
+	./$(EXE_MONITOR) 10 500 & \
+	sleep 1; \
+	./$(EXE_MINER) 3 8 & \
+	./$(EXE_MINER) 5 8 & \
+	./$(EXE_MINER) 10 8 & \
+	./$(EXE_MINER) 7 1 & \
+	wait
 
 # Makefile de tests
 -include tests.mk

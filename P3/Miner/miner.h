@@ -12,8 +12,9 @@
 #ifndef _MINER_H
 #define _MINER_H
 
-#include "file_utils.h"
+#include "shared.h"
 #include "types.h"
+#include "utils.h"
 #include <pthread.h>
 #include <semaphore.h>
 #include <stdio.h>
@@ -55,9 +56,10 @@ typedef struct {
  * numero de hilos)
  * @param miner_pipe Tuberia minero--->registrador
  * @param logger_pipe Tuberia registrador---->minero
- * @param sems Estructura de semaforos del sistema
+ * @param shared Estructura de memoria compartida entre mineros
+ * @param mq Cola de mensajes entre minero y comprobador
  */
 void minero(Miner_data *args, i32 *miner_pipe, i32 *logger_pipe,
-            Miner_Mutexes *sems);
+            SharedMinerData *shared, mqd_t mq);
 
 #endif
