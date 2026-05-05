@@ -1,0 +1,7 @@
+a) El sender no hace nada y espera a que se presione tecla de fin. Si no se presiona tecla de fin y se ejecuta receptor en otro lado, se imprime 29: Hi all! y espera a tecla de fin. Si se presiona tecla de fin antes de ejecutar mq_receptor, se queda en espera el receptor.
+
+b) Al reves que antes, el receptor queda en espera bloqueante hasta que el sender envia el mensaje.
+
+c) En caso de ejecutar el receptor sin emisor, da error pero termina el programa
+
+En general no, puesto que las operaciones de colas de mensajes son atomicas y usar semaforos añadiria complejidad, perdida de rendimiento y además habria mayor riesgo de interbloqueos

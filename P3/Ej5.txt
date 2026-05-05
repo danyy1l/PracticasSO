@@ -1,0 +1,4 @@
+a) Se envian en el orden predeterminado, pero se reciben en el orden de prioridad definido
+Porque siguen el array de prioridades.
+
+b) Da error en el momento de escribir (Bad file descriptor). Da error a la hora de leer (Bad file descriptor)

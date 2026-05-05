@@ -10,11 +10,11 @@ int main(void) {
   Message msg;
   mqd_t queue;
 
-  queue = mq_open(
-      MQ_NAME,
-      O_CREAT | O_RDONLY, /* This process is going to receive messages. */
-      S_IRUSR | S_IWUSR,  /* The user can read and write. */
-      &attributes);
+  queue = mq_open(MQ_NAME,
+                  O_CREAT |
+                      O_RDONLY, /* This process is going to receive messages. */
+                  S_IRUSR | S_IWUSR, /* The user can read and write. */
+                  &attributes);
 
   if (queue == (mqd_t)-1) {
     fprintf(stderr, "Error opening the queue\n");

@@ -12,9 +12,8 @@ int main(void) {
   mqd_t queue;
 
   queue = mq_open(
-      MQ_NAME,
-      O_CREAT | O_WRONLY, /* This process is going to send messages. */
-      S_IRUSR | S_IWUSR,  /* The user can read and write. */
+      MQ_NAME, O_CREAT | O_WRONLY, /* This process is going to send messages. */
+      S_IRUSR | S_IWUSR,           /* The user can read and write. */
       &attributes);
 
   if (queue == (mqd_t)-1) {
